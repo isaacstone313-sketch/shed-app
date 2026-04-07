@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase'
 
 const TABS = [
   { id: 'log', label: 'Log' },
-  { id: 'history', label: 'History' },
+  { id: 'feed', label: 'Feed' },
   { id: 'groups', label: 'Groups' },
 ]
 

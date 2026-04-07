@@ -4,7 +4,7 @@ import Auth from './components/Auth'
 import UsernameSetup from './components/UsernameSetup'
 import Nav from './components/Nav'
 import LogSession from './components/LogSession'
-import History from './components/History'
+import Feed from './components/Feed'
 import Groups from './components/Groups'
 
 export default function App() {
@@ -68,7 +68,7 @@ export default function App() {
       <Nav view={view} setView={setView} profile={profile} />
       <main className="max-w-2xl mx-auto px-4 py-8">
         {view === 'log' && <LogSession userId={session.user.id} />}
-        {view === 'history' && <History userId={session.user.id} />}
+        {view === 'feed' && <Feed userId={session.user.id} />}
         {view === 'groups' && <Groups userId={session.user.id} profile={profile} />}
       </main>
     </div>
