@@ -24,7 +24,6 @@ Deno.serve(async (req: Request) => {
   }
 
   // Get Spotify access token via Client Credentials flow
-  const clientId = Deno.env.get('SPOTIFY_CLIENT_ID')
   const clientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET')
   const credentials = btoa(`${clientId}:${clientSecret}`)
 
