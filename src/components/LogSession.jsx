@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 // import { getSessionFeedback } from '../lib/feedback'  // AI coaching — disabled for now
 
@@ -7,15 +7,35 @@ const INSTRUMENTS = [
   'Vocals', 'Saxophone', 'Trumpet', 'Flute', 'Other',
 ]
 
+const SPOTIFY_LOGO = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+  </svg>
+)
+
+function formatMs(ms) {
+  const totalSec = Math.round(ms / 1000)
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 export default function LogSession({ userId }) {
   const [instrument, setInstrument] = useState('')
   const [customInstrument, setCustomInstrument] = useState('')
   const [duration, setDuration] = useState('')
   const [notes, setNotes] = useState('')
-  const [spotifyUrl, setSpotifyUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+
+  // Spotify search state
+  const [spotifyQuery, setSpotifyQuery] = useState('')
+  const [spotifyResults, setSpotifyResults] = useState([])
+  const [spotifySearching, setSpotifySearching] = useState(false)
+  const [selectedTrack, setSelectedTrack] = useState(null)
+  const debounceRef = useRef(null)
+  const dropdownRef = useRef(null)
 
   // AI coaching state — kept for re-enabling later
   // const [feedback, setFeedback] = useState(null)
@@ -24,20 +44,66 @@ export default function LogSession({ userId }) {
 
   const resolvedInstrument = instrument === 'Other' ? customInstrument : instrument
 
-  function parseSpotifyUrl(url) {
-    const match = url.trim().match(/spotify\.com\/track\/([a-zA-Z0-9]+)/)
-    return match ? `https://open.spotify.com/track/${match[1]}` : null
+  // Debounced Spotify search
+  useEffect(() => {
+    clearTimeout(debounceRef.current)
+    if (!spotifyQuery.trim() || selectedTrack) {
+      setSpotifyResults([])
+      return
+    }
+    setSpotifySearching(true)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+        const { data: { session: authSession } } = await supabase.auth.getSession()
+        const token = authSession?.access_token ?? supabaseAnonKey
+
+        const res = await fetch(`${supabaseUrl}/functions/v1/spotify-search`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': supabaseAnonKey,
+          },
+          body: JSON.stringify({ query: spotifyQuery.trim() }),
+        })
+        const data = await res.json()
+        setSpotifyResults(Array.isArray(data) ? data : [])
+      } catch {
+        setSpotifyResults([])
+      } finally {
+        setSpotifySearching(false)
+      }
+    }, 400)
+    return () => clearTimeout(debounceRef.current)
+  }, [spotifyQuery, selectedTrack])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setSpotifyResults([])
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  function selectTrack(track) {
+    setSelectedTrack(track)
+    setSpotifyQuery('')
+    setSpotifyResults([])
+  }
+
+  function clearTrack() {
+    setSelectedTrack(null)
+    setSpotifyQuery('')
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!resolvedInstrument.trim()) return setError('Please enter an instrument.')
-
-    const cleanSpotify = spotifyUrl.trim()
-    if (cleanSpotify && !parseSpotifyUrl(cleanSpotify)) {
-      return setError('Spotify URL must be a track link (open.spotify.com/track/…)')
-    }
-
     setError('')
     setLoading(true)
 
@@ -50,7 +116,7 @@ export default function LogSession({ userId }) {
       instrument: resolvedInstrument.trim(),
       duration_minutes: parseInt(duration),
       notes: notes.trim(),
-      spotify_url: cleanSpotify ? parseSpotifyUrl(cleanSpotify) : null,
+      spotify_url: selectedTrack?.url ?? null,
     }
 
     // AI coaching — fetch recent sessions for context (kept for later)
@@ -93,7 +159,8 @@ export default function LogSession({ userId }) {
     setCustomInstrument('')
     setDuration('')
     setNotes('')
-    setSpotifyUrl('')
+    setSelectedTrack(null)
+    setSpotifyQuery('')
     setSuccess(true)
     setTimeout(() => setSuccess(false), 2400)
   }
@@ -170,23 +237,101 @@ export default function LogSession({ userId }) {
           />
         </div>
 
+        {/* Spotify search */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">
-            What were you practicing to?
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-[#1DB954]">{SPOTIFY_LOGO}</span>
+              What were you practicing to?
+            </span>
             <span className="ml-1.5 text-xs font-normal text-slate-600">optional</span>
           </label>
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
-            </svg>
-            <input
-              className="input pl-9"
-              type="url"
-              placeholder="https://open.spotify.com/track/…"
-              value={spotifyUrl}
-              onChange={e => setSpotifyUrl(e.target.value)}
-            />
-          </div>
+
+          {selectedTrack ? (
+            /* Selected track pill */
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5">
+              {selectedTrack.artwork && (
+                <img
+                  src={selectedTrack.artwork}
+                  alt=""
+                  className="w-9 h-9 rounded object-cover shrink-0"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white truncate">{selectedTrack.name}</p>
+                <p className="text-xs text-slate-500 truncate">{selectedTrack.artist}</p>
+              </div>
+              <button
+                type="button"
+                onClick={clearTrack}
+                className="shrink-0 text-slate-600 hover:text-slate-300 transition p-1"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            /* Search input + dropdown */
+            <div className="relative" ref={dropdownRef}>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1DB954]/60 pointer-events-none">
+                {SPOTIFY_LOGO}
+              </span>
+              <input
+                className="input pl-9"
+                placeholder="Search for a track…"
+                value={spotifyQuery}
+                onChange={e => setSpotifyQuery(e.target.value)}
+                autoComplete="off"
+              />
+              {spotifyQuery && (
+                <button
+                  type="button"
+                  onClick={() => { setSpotifyQuery(''); setSpotifyResults([]) }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Dropdown */}
+              {(spotifySearching || spotifyResults.length > 0) && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#1A1A27] border border-white/10 rounded-xl overflow-hidden shadow-xl z-20">
+                  {spotifySearching ? (
+                    <div className="px-4 py-3 text-sm text-slate-500">Searching…</div>
+                  ) : (
+                    spotifyResults.map(track => (
+                      <button
+                        key={track.id}
+                        type="button"
+                        onClick={() => selectTrack(track)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition text-left"
+                      >
+                        {track.artwork ? (
+                          <img
+                            src={track.artwork}
+                            alt=""
+                            className="w-9 h-9 rounded object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded bg-white/5 shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-white truncate">{track.name}</p>
+                          <p className="text-xs text-slate-500 truncate">{track.artist}</p>
+                        </div>
+                        <span className="text-xs text-slate-600 shrink-0 tabular-nums">
+                          {formatMs(track.duration_ms)}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
