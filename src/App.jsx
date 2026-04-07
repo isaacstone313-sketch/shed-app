@@ -44,8 +44,8 @@ export default function App() {
   // Still resolving session
   if (session === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
-        <span className="text-stone-400 text-sm">Loading…</span>
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0D14]">
+        <span className="text-slate-600 text-sm">Loading…</span>
       </div>
     )
   }
@@ -75,9 +75,9 @@ export default function App() {
 
   // Full app
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#0D0D14]">
       <Nav />
-      <main className="max-w-2xl mx-auto px-4 pt-5 pb-28">
+      <main className="max-w-2xl mx-auto px-4 pt-6 pb-36">
         {view === 'feed'     && <Feed      userId={session.user.id} />}
         {view === 'discover' && <Discover  userId={session.user.id} />}
         {view === 'log'      && <LogSession userId={session.user.id} />}

@@ -164,28 +164,28 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
 
   return (
     <div className="relative bg-[#16161F] border border-white/[0.06] rounded-2xl overflow-hidden hover:border-white/10 transition">
-      {/* Instrument accent bar */}
+      {/* Instrument accent bar — 6px wide */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1"
+        className="absolute left-0 top-0 bottom-0 w-1.5"
         style={{ background: accent }}
       />
 
-      <div className="pl-4">
+      <div className="pl-5">
         {/* Header */}
-        <div className="pr-4 pt-3.5 pb-2.5 flex items-start gap-2.5">
+        <div className="pr-4 pt-4 pb-3 flex items-start gap-3">
           <Avatar username={username} />
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-sm font-semibold text-white">{username}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[15px] font-semibold text-white">{username}</span>
               {isOwn && <span className="text-xs text-slate-500">you</span>}
             </div>
-            <span className="text-xs text-slate-500">{formatTimestamp(session.created_at)}</span>
+            <span className="text-xs text-slate-500 mt-0.5 block">{formatTimestamp(session.created_at)}</span>
           </div>
           {showFollow && (
             <button
               onClick={handleFollow}
               disabled={followPending}
-              className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full border transition disabled:opacity-50 ${
+              className={`shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition disabled:opacity-50 ${
                 isFollowing
                   ? 'border-white/10 text-slate-500 hover:border-red-500/30 hover:text-red-400'
                   : 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
@@ -197,18 +197,18 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
         </div>
 
         {/* Activity meta */}
-        <div className="pr-4 pb-2.5 flex items-center gap-2">
-          <span className="bg-white/5 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-full">
+        <div className="pr-4 pb-3 flex items-center gap-2.5">
+          <span className="bg-white/5 text-slate-400 text-xs font-semibold px-3 py-1 rounded-full">
             {session.instrument}
           </span>
-          <span className="text-slate-600 text-xs">·</span>
+          <span className="text-slate-700 text-sm">·</span>
           <span className="text-sm font-medium text-slate-400">{formatDuration(session.duration_minutes)}</span>
         </div>
 
         {/* Notes */}
         {session.notes && (
-          <div className="pr-4 pb-3.5">
-            <p className="text-sm text-slate-300 leading-relaxed">{session.notes}</p>
+          <div className="pr-4 pb-4">
+            <p className="text-[15px] text-slate-300 leading-relaxed">{session.notes}</p>
           </div>
         )}
 
@@ -217,23 +217,23 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
           <div className="border-t border-white/5">
             <button
               onClick={() => setFeedbackOpen(o => !o)}
-              className="w-full pr-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition"
+              className="w-full pr-4 py-3 flex items-center justify-between hover:bg-white/[0.02] transition"
             >
               <span className="text-xs font-semibold text-amber-500/70 uppercase tracking-wide">AI Coaching</span>
               <Chevron open={feedbackOpen} />
             </button>
             {feedbackOpen && (
-              <div className="pr-4 pb-3.5">
-                <p className="text-sm text-slate-400 leading-relaxed">{session.ai_feedback}</p>
+              <div className="pr-4 pb-4">
+                <p className="text-[15px] text-slate-400 leading-relaxed">{session.ai_feedback}</p>
               </div>
             )}
           </div>
         )}
 
         {/* Kudos bar */}
-        <div className="border-t border-white/5 pr-4 py-2 flex items-center">
+        <div className="border-t border-white/5 pr-4 py-2.5 flex items-center">
           {isOwn ? (
-            <div className="flex items-center gap-1.5 px-2 py-1 -ml-2 text-slate-600">
+            <div className="flex items-center gap-2 px-2 py-1 -ml-2 text-slate-600">
               <ThumbsUp filled={false} />
               {kudosCount > 0 && <span className="text-xs font-semibold text-slate-500">{kudosCount}</span>}
             </div>
@@ -242,7 +242,7 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
               onClick={handleKudos}
               disabled={kudosPending}
               style={{ transform: pop ? 'scale(1.3)' : 'scale(1)', transition: 'transform 150ms ease, color 150ms ease' }}
-              className={`flex items-center gap-1.5 rounded-lg px-2 py-1 -ml-2 disabled:opacity-60 ${
+              className={`flex items-center gap-2 rounded-lg px-2 py-1 -ml-2 disabled:opacity-60 ${
                 hasKudosed ? 'text-amber-500 hover:text-amber-400' : 'text-slate-600 hover:text-amber-500'
               }`}
             >

@@ -163,7 +163,7 @@ export default function Discover({ userId }) {
             </div>
           ) : (
             <>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {sessions.map(session => (
                   <SessionCard
                     key={session.id}

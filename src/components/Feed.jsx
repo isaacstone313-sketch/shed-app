@@ -22,9 +22,9 @@ function groupByDate(sessions) {
 
 function DateDivider({ label }) {
   return (
-    <div className="flex items-center gap-3 py-1">
+    <div className="flex items-center gap-3 py-3">
       <div className="flex-1 h-px bg-white/5" />
-      <span className="text-[11px] font-semibold text-amber-500/70 uppercase tracking-widest shrink-0">
+      <span className="text-xs font-bold text-amber-500/60 uppercase tracking-[0.15em] shrink-0">
         {label}
       </span>
       <div className="flex-1 h-px bg-white/5" />
@@ -118,18 +118,18 @@ export default function Feed({ userId }) {
     <div className="space-y-4">
       {/* My stats strip */}
       {myStats && myStats.sessionCount > 0 && (
-        <div className="flex gap-4 px-1">
-          <div className="text-center">
-            <div className="text-sm font-semibold text-amber-500">{myStats.streak} 🔥</div>
-            <div className="text-[10px] text-slate-500">streak</div>
+        <div className="flex gap-2 mb-2">
+          <div className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-4 text-center">
+            <div className="text-2xl font-bold text-amber-500 leading-none">{myStats.streak}</div>
+            <div className="text-[11px] text-slate-500 mt-1.5 uppercase tracking-wide">day streak 🔥</div>
           </div>
-          <div className="text-center">
-            <div className="text-sm font-semibold text-white">{myStats.totalMinutes}m</div>
-            <div className="text-[10px] text-slate-500">total</div>
+          <div className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-4 text-center">
+            <div className="text-2xl font-bold text-white leading-none">{myStats.totalMinutes}<span className="text-base font-semibold text-slate-500">m</span></div>
+            <div className="text-[11px] text-slate-500 mt-1.5 uppercase tracking-wide">total</div>
           </div>
-          <div className="text-center">
-            <div className="text-sm font-semibold text-white">{myStats.sessionCount}</div>
-            <div className="text-[10px] text-slate-500">sessions</div>
+          <div className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-4 text-center">
+            <div className="text-2xl font-bold text-white leading-none">{myStats.sessionCount}</div>
+            <div className="text-[11px] text-slate-500 mt-1.5 uppercase tracking-wide">sessions</div>
           </div>
         </div>
       )}
@@ -139,11 +139,11 @@ export default function Feed({ userId }) {
       ) : sessions.length === 0 ? (
         <EmptyFeed />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {groups.map(([label, items]) => (
             <div key={label}>
               <DateDivider label={label} />
-              <div className="space-y-2 mt-2">
+              <div className="space-y-3">
                 {items.map(session => (
                   <SessionCard
                     key={session.id}
