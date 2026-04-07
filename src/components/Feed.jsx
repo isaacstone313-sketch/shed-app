@@ -23,11 +23,11 @@ function groupByDate(sessions) {
 function DateDivider({ label }) {
   return (
     <div className="flex items-center gap-3 py-1">
-      <div className="flex-1 h-px bg-stone-200" />
-      <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest shrink-0">
+      <div className="flex-1 h-px bg-white/5" />
+      <span className="text-[11px] font-semibold text-amber-500/70 uppercase tracking-widest shrink-0">
         {label}
       </span>
-      <div className="flex-1 h-px bg-stone-200" />
+      <div className="flex-1 h-px bg-white/5" />
     </div>
   )
 }
@@ -35,14 +35,14 @@ function DateDivider({ label }) {
 function EmptyFeed() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-stone-100 flex items-center justify-center mb-4">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 18V5l12-2v13" />
           <circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
         </svg>
       </div>
-      <p className="text-stone-600 font-medium text-sm">Nothing here yet</p>
-      <p className="text-stone-400 text-xs mt-1 max-w-[220px] leading-relaxed">
+      <p className="text-slate-400 font-medium text-sm">Nothing here yet</p>
+      <p className="text-slate-600 text-xs mt-1 max-w-[220px] leading-relaxed">
         Log a session, join a group, or follow people to fill your feed.
       </p>
     </div>
@@ -121,15 +121,15 @@ export default function Feed({ userId }) {
         <div className="flex gap-4 px-1">
           <div className="text-center">
             <div className="text-sm font-semibold text-amber-500">{myStats.streak} 🔥</div>
-            <div className="text-[10px] text-stone-400">streak</div>
+            <div className="text-[10px] text-slate-500">streak</div>
           </div>
           <div className="text-center">
-            <div className="text-sm font-semibold text-stone-900">{myStats.totalMinutes}m</div>
-            <div className="text-[10px] text-stone-400">total</div>
+            <div className="text-sm font-semibold text-white">{myStats.totalMinutes}m</div>
+            <div className="text-[10px] text-slate-500">total</div>
           </div>
           <div className="text-center">
-            <div className="text-sm font-semibold text-stone-900">{myStats.sessionCount}</div>
-            <div className="text-[10px] text-stone-400">sessions</div>
+            <div className="text-sm font-semibold text-white">{myStats.sessionCount}</div>
+            <div className="text-[10px] text-slate-500">sessions</div>
           </div>
         </div>
       )}
@@ -166,16 +166,16 @@ function FeedSkeleton() {
   return (
     <div className="space-y-2.5">
       {[1, 2, 3].map(i => (
-        <div key={i} className="bg-white border border-stone-200 rounded-2xl p-4 animate-pulse">
+        <div key={i} className="bg-[#16161F] border border-white/[0.06] rounded-2xl p-4 animate-pulse">
           <div className="flex gap-2.5 mb-3">
-            <div className="w-9 h-9 rounded-full bg-stone-100 shrink-0" />
+            <div className="w-9 h-9 rounded-full bg-white/5 shrink-0" />
             <div className="space-y-1.5 flex-1">
-              <div className="h-3 bg-stone-100 rounded w-24" />
-              <div className="h-2.5 bg-stone-100 rounded w-32" />
+              <div className="h-3 bg-white/5 rounded w-24" />
+              <div className="h-2.5 bg-white/5 rounded w-32" />
             </div>
           </div>
-          <div className="h-3 bg-stone-100 rounded w-full mb-2" />
-          <div className="h-3 bg-stone-100 rounded w-2/3" />
+          <div className="h-3 bg-white/5 rounded w-full mb-2" />
+          <div className="h-3 bg-white/5 rounded w-2/3" />
         </div>
       ))}
     </div>

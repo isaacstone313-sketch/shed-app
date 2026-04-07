@@ -89,13 +89,13 @@ export default function Discover({ userId }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold">Discover</h2>
-        <p className="text-stone-500 text-sm mt-0.5">The global practice stream</p>
+        <h2 className="text-lg font-semibold text-white">Discover</h2>
+        <p className="text-slate-500 text-sm mt-0.5">The global practice stream</p>
       </div>
 
       {/* Search bar */}
       <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <input
@@ -107,7 +107,7 @@ export default function Discover({ userId }) {
         {query && (
           <button
             onClick={() => setQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -120,16 +120,16 @@ export default function Discover({ userId }) {
       {isSearching && (
         <div className="space-y-2">
           {searchLoading ? (
-            <div className="text-stone-400 text-sm text-center py-4">Searching…</div>
+            <div className="text-slate-500 text-sm text-center py-4">Searching…</div>
           ) : searchResults.length === 0 ? (
             <div className="flex flex-col items-center py-10 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center mb-3">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
               </div>
-              <p className="text-stone-500 text-sm font-medium">No musicians found</p>
-              <p className="text-stone-400 text-xs mt-1">Try a different username</p>
+              <p className="text-slate-400 text-sm font-medium">No musicians found</p>
+              <p className="text-slate-600 text-xs mt-1">Try a different username</p>
             </div>
           ) : (
             searchResults.map(profile => (
@@ -152,14 +152,14 @@ export default function Discover({ userId }) {
             <FeedSkeleton />
           ) : sessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-stone-100 flex items-center justify-center mb-4">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
                 </svg>
               </div>
-              <p className="text-stone-600 font-medium text-sm">No sessions yet</p>
-              <p className="text-stone-400 text-xs mt-1">Be the first to log a practice session.</p>
+              <p className="text-slate-400 font-medium text-sm">No sessions yet</p>
+              <p className="text-slate-600 text-xs mt-1">Be the first to log a practice session.</p>
             </div>
           ) : (
             <>
@@ -218,16 +218,16 @@ function UserRow({ profile, userId, isFollowing, onFollowChange }) {
   }
 
   return (
-    <div className="bg-white border border-stone-200 rounded-xl px-4 py-3 flex items-center gap-3">
+    <div className="bg-[#16161F] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
       <Avatar username={profile.username} />
-      <span className="flex-1 text-sm font-medium text-stone-900">{profile.username}</span>
+      <span className="flex-1 text-sm font-medium text-white">{profile.username}</span>
       <button
         onClick={handleFollow}
         disabled={pending}
         className={`text-xs font-medium px-2.5 py-1 rounded-full border transition disabled:opacity-50 ${
           isFollowing
-            ? 'border-stone-200 text-stone-400 hover:border-rose-200 hover:text-rose-400'
-            : 'border-amber-300 text-amber-600 hover:bg-amber-50'
+            ? 'border-white/10 text-slate-500 hover:border-red-500/30 hover:text-red-400'
+            : 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
         }`}
       >
         {isFollowing ? 'Following' : 'Follow'}
@@ -240,16 +240,16 @@ function FeedSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3].map(i => (
-        <div key={i} className="bg-white border border-stone-200 rounded-2xl p-4 animate-pulse">
+        <div key={i} className="bg-[#16161F] border border-white/[0.06] rounded-2xl p-4 animate-pulse">
           <div className="flex gap-2.5 mb-3">
-            <div className="w-9 h-9 rounded-full bg-stone-100 shrink-0" />
+            <div className="w-9 h-9 rounded-full bg-white/5 shrink-0" />
             <div className="space-y-1.5 flex-1">
-              <div className="h-3 bg-stone-100 rounded w-24" />
-              <div className="h-2.5 bg-stone-100 rounded w-32" />
+              <div className="h-3 bg-white/5 rounded w-24" />
+              <div className="h-2.5 bg-white/5 rounded w-32" />
             </div>
           </div>
-          <div className="h-3 bg-stone-100 rounded w-full mb-2" />
-          <div className="h-3 bg-stone-100 rounded w-3/4" />
+          <div className="h-3 bg-white/5 rounded w-full mb-2" />
+          <div className="h-3 bg-white/5 rounded w-3/4" />
         </div>
       ))}
     </div>

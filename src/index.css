@@ -4,35 +4,36 @@
 
 @layer base {
   body {
-    @apply bg-stone-50 text-stone-900 antialiased;
+    background-color: #0D0D14;
+    @apply text-white antialiased;
   }
 }
 
 @layer components {
   .input {
-    @apply w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white
-           focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent
-           placeholder:text-stone-400 transition;
+    @apply w-full border border-white/10 rounded-lg px-3 py-2 text-sm
+           bg-[#1A1A27] text-white
+           focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
+           placeholder:text-slate-600 transition;
   }
 
   .btn-primary {
-    @apply bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white
-           rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50
+    @apply bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white
+           rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-40
            disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply border border-stone-200 hover:bg-stone-100 active:bg-stone-200 text-stone-600
+    @apply border border-white/10 hover:bg-white/5 active:bg-white/10 text-slate-300
            rounded-lg px-4 py-2 text-sm font-medium transition;
   }
 
   .card {
-    @apply bg-white border border-stone-200 rounded-xl p-5;
+    @apply bg-[#16161F] border border-white/[0.06] rounded-xl p-5;
   }
 }
 
 @layer utilities {
-  /* iOS safe-area bottom padding for the bottom nav */
   .pb-safe {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }

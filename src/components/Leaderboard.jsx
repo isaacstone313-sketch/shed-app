@@ -62,26 +62,26 @@ export default function Leaderboard({ group, currentUserId, onBack }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="text-stone-400 hover:text-stone-600 transition text-sm">
+        <button onClick={onBack} className="text-slate-500 hover:text-slate-300 transition text-sm">
           ← Back
         </button>
         <div>
-          <h3 className="font-semibold">{group.name}</h3>
-          <p className="text-xs text-stone-500">
+          <h3 className="font-semibold text-white">{group.name}</h3>
+          <p className="text-xs text-slate-500">
             Invite code:{' '}
-            <span className="font-mono font-medium text-stone-700">{group.invite_code}</span>
+            <span className="font-mono font-medium text-amber-400">{group.invite_code}</span>
           </p>
         </div>
       </div>
 
       {/* Metric tabs */}
-      <div className="flex gap-1 bg-stone-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 bg-white/5 p-1 rounded-lg w-fit">
         {METRICS.map(m => (
           <button
             key={m.id}
             onClick={() => setMetric(m.id)}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
-              metric === m.id ? 'bg-white shadow-sm text-stone-900' : 'text-stone-500 hover:text-stone-700'
+              metric === m.id ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300'
             }`}
           >
             {m.label}
@@ -90,36 +90,36 @@ export default function Leaderboard({ group, currentUserId, onBack }) {
       </div>
 
       {loading ? (
-        <div className="text-stone-400 text-sm text-center py-8">Loading…</div>
+        <div className="text-slate-500 text-sm text-center py-8">Loading…</div>
       ) : sorted.length === 0 ? (
-        <div className="text-stone-400 text-sm text-center py-8">No members yet.</div>
+        <div className="text-slate-500 text-sm text-center py-8">No members yet.</div>
       ) : (
         <div className="space-y-2">
           {sorted.map((row, i) => (
             <div
               key={row.userId}
               className={`card flex items-center gap-4 ${
-                row.userId === currentUserId ? 'border-amber-300 bg-amber-50' : ''
+                row.userId === currentUserId ? 'border-amber-500/20 bg-amber-500/5' : ''
               }`}
             >
               <span
                 className={`text-sm font-semibold w-5 text-center ${
-                  i === 0 ? 'text-amber-500' : 'text-stone-400'
+                  i === 0 ? 'text-amber-500' : 'text-slate-500'
                 }`}
               >
                 {i + 1}
               </span>
-              <span className="flex-1 text-sm font-medium">
+              <span className="flex-1 text-sm font-medium text-white">
                 {row.username}
                 {row.userId === currentUserId && (
-                  <span className="ml-1.5 text-xs text-amber-600">(you)</span>
+                  <span className="ml-1.5 text-xs text-amber-500">(you)</span>
                 )}
               </span>
               <div className="text-right">
-                <div className="text-sm font-semibold">
+                <div className="text-sm font-semibold text-white">
                   {activeMetric.format(row[metric])}
                 </div>
-                <div className="text-xs text-stone-400">{activeMetric.label}</div>
+                <div className="text-xs text-slate-500">{activeMetric.label}</div>
               </div>
             </div>
           ))}

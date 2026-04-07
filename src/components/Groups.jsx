@@ -132,49 +132,49 @@ export default function Groups({ userId, profile }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Groups</h2>
-        <p className="text-stone-500 text-sm mt-0.5">Compete with friends on practice time</p>
+        <h2 className="text-lg font-semibold text-white">Groups</h2>
+        <p className="text-slate-500 text-sm mt-0.5">Compete with friends on practice time</p>
       </div>
 
       {/* My groups */}
       {loading ? (
-        <div className="text-stone-400 text-sm text-center py-4">Loading…</div>
+        <div className="text-slate-500 text-sm text-center py-4">Loading…</div>
       ) : myGroups.length === 0 ? (
         <div className="flex flex-col items-center py-10 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center mb-3">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
           </div>
-          <p className="text-stone-500 text-sm font-medium">No groups yet</p>
-          <p className="text-stone-400 text-xs mt-1 max-w-[200px]">Create a group or join one with an invite code below.</p>
+          <p className="text-slate-400 text-sm font-medium">No groups yet</p>
+          <p className="text-slate-600 text-xs mt-1 max-w-[200px]">Create a group or join one with an invite code below.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {myGroups.map(group => (
             <div
               key={group.id}
-              className="card flex items-center justify-between gap-4 cursor-pointer hover:border-stone-300 transition"
+              className="card flex items-center justify-between gap-4 cursor-pointer hover:border-white/10 transition"
               onClick={() => setSelectedGroup(group)}
             >
               <div>
-                <div className="font-medium text-sm">{group.name}</div>
-                <div className="text-xs text-stone-400 mt-0.5">
+                <div className="font-medium text-sm text-white">{group.name}</div>
+                <div className="text-xs text-slate-500 mt-0.5">
                   Code:{' '}
-                  <span className="font-mono font-medium text-stone-600">{group.invite_code}</span>
+                  <span className="font-mono font-medium text-amber-400">{group.invite_code}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-stone-500 font-medium">Leaderboard →</span>
+                <span className="text-xs text-slate-500 font-medium">Leaderboard →</span>
                 <button
                   onClick={e => {
                     e.stopPropagation()
                     handleLeave(group.id)
                   }}
-                  className="text-xs text-stone-400 hover:text-red-500 transition"
+                  className="text-xs text-slate-600 hover:text-red-400 transition"
                 >
                   Leave
                 </button>
@@ -188,7 +188,7 @@ export default function Groups({ userId, profile }) {
       <div className="grid sm:grid-cols-2 gap-4">
         {/* Create group */}
         <div className="card">
-          <h3 className="font-medium text-sm mb-3">Create a group</h3>
+          <h3 className="font-medium text-sm text-white mb-3">Create a group</h3>
           <form onSubmit={handleCreate} className="space-y-2">
             <input
               className="input"
@@ -197,7 +197,7 @@ export default function Groups({ userId, profile }) {
               onChange={e => setCreateName(e.target.value)}
               required
             />
-            {createError && <p className="text-xs text-red-500">{createError}</p>}
+            {createError && <p className="text-xs text-red-400">{createError}</p>}
             <button className="btn-primary w-full" disabled={createLoading}>
               {createLoading ? 'Creating…' : 'Create'}
             </button>
@@ -206,7 +206,7 @@ export default function Groups({ userId, profile }) {
 
         {/* Join group */}
         <div className="card">
-          <h3 className="font-medium text-sm mb-3">Join a group</h3>
+          <h3 className="font-medium text-sm text-white mb-3">Join a group</h3>
           <form onSubmit={handleJoin} className="space-y-2">
             <input
               className="input font-mono uppercase"
@@ -216,8 +216,8 @@ export default function Groups({ userId, profile }) {
               required
               maxLength={6}
             />
-            {joinError && <p className="text-xs text-red-500">{joinError}</p>}
-            {joinSuccess && <p className="text-xs text-emerald-600">{joinSuccess}</p>}
+            {joinError && <p className="text-xs text-red-400">{joinError}</p>}
+            {joinSuccess && <p className="text-xs text-emerald-400">{joinSuccess}</p>}
             <button className="btn-primary w-full" disabled={joinLoading}>
               {joinLoading ? 'Joining…' : 'Join'}
             </button>

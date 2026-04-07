@@ -24,7 +24,7 @@ const TABS = [
     label: 'Log',
     primary: true,
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" y1="5" x2="12" y2="19" />
         <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
@@ -56,7 +56,7 @@ const TABS = [
 
 export default function BottomNav({ view, setView }) {
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur border-t border-stone-200">
+    <nav className="fixed bottom-0 inset-x-0 z-50 bg-[#0D0D14]/95 backdrop-blur-sm border-t border-white/5">
       <div className="max-w-2xl mx-auto flex items-end justify-around px-2 pb-safe">
         {TABS.map(tab => {
           const active = view === tab.id
@@ -67,14 +67,14 @@ export default function BottomNav({ view, setView }) {
                 onClick={() => setView(tab.id)}
                 className="flex flex-col items-center gap-0.5 px-4 py-3 -mt-3"
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-md transition-all ${
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${
                   active
-                    ? 'bg-amber-600 shadow-amber-200'
-                    : 'bg-amber-500 shadow-amber-100'
+                    ? 'bg-amber-600 shadow-amber-900/50'
+                    : 'bg-amber-500 shadow-amber-900/30'
                 }`}>
                   <span className="text-white">{tab.icon}</span>
                 </div>
-                <span className={`text-[10px] font-medium mt-0.5 ${active ? 'text-amber-600' : 'text-stone-400'}`}>
+                <span className={`text-[10px] font-medium mt-0.5 ${active ? 'text-amber-500' : 'text-slate-600'}`}>
                   {tab.label}
                 </span>
               </button>
@@ -86,10 +86,10 @@ export default function BottomNav({ view, setView }) {
               onClick={() => setView(tab.id)}
               className="flex flex-col items-center gap-0.5 px-3 py-3 transition-colors"
             >
-              <span className={active ? 'text-amber-500' : 'text-stone-400'}>
+              <span className={`transition-colors ${active ? 'text-amber-500' : 'text-slate-600'}`}>
                 {tab.icon}
               </span>
-              <span className={`text-[10px] font-medium ${active ? 'text-amber-500' : 'text-stone-400'}`}>
+              <span className={`text-[10px] font-medium ${active ? 'text-amber-500' : 'text-slate-600'}`}>
                 {tab.label}
               </span>
             </button>

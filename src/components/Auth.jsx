@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import GeoBg from './GeoBg'
 
 export default function Auth({ initialMode = 'signin', onBack }) {
   const [mode, setMode] = useState(initialMode)
@@ -27,12 +28,14 @@ export default function Auth({ initialMode = 'signin', onBack }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-stone-50">
-      <div className="w-full max-w-sm">
+    <div className="relative min-h-screen bg-[#0D0D14] flex items-center justify-center px-4 overflow-hidden">
+      <GeoBg rings={4} ringSize={520} dotOpacity={0.06} />
+
+      <div className="relative z-10 w-full max-w-sm">
         {onBack && (
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-stone-400 hover:text-stone-600 text-sm mb-6 transition"
+            className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-sm mb-6 transition"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
@@ -40,13 +43,14 @@ export default function Auth({ initialMode = 'signin', onBack }) {
             Back
           </button>
         )}
+
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Shed</h1>
-          <p className="text-stone-500 text-sm mt-1">Your music practice log</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Shed</h1>
+          <p className="text-slate-500 text-sm mt-1">Your music practice log</p>
         </div>
 
         <div className="card">
-          <h2 className="font-medium mb-4">
+          <h2 className="font-semibold text-white mb-4">
             {mode === 'signin' ? 'Sign in' : 'Create account'}
           </h2>
 
@@ -69,11 +73,7 @@ export default function Auth({ initialMode = 'signin', onBack }) {
               minLength={6}
             />
             {message && (
-              <p
-                className={`text-sm ${
-                  message.type === 'error' ? 'text-red-500' : 'text-emerald-600'
-                }`}
-              >
+              <p className={`text-sm ${message.type === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>
                 {message.text}
               </p>
             )}
@@ -82,14 +82,11 @@ export default function Auth({ initialMode = 'signin', onBack }) {
             </button>
           </form>
 
-          <p className="text-sm text-stone-500 mt-4 text-center">
+          <p className="text-sm text-slate-500 mt-4 text-center">
             {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
             <button
-              className="text-amber-600 hover:underline font-medium"
-              onClick={() => {
-                setMode(mode === 'signin' ? 'signup' : 'signin')
-                setMessage(null)
-              }}
+              className="text-amber-400 hover:text-amber-300 font-medium transition"
+              onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setMessage(null) }}
             >
               {mode === 'signin' ? 'Sign up' : 'Sign in'}
             </button>

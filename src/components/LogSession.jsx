@@ -87,22 +87,22 @@ export default function LogSession({ userId }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Log a session</h2>
-        <p className="text-stone-500 text-sm mt-0.5">What did you work on today?</p>
+        <h2 className="text-lg font-semibold text-white">Log a session</h2>
+        <p className="text-slate-500 text-sm mt-0.5">What did you work on today?</p>
       </div>
 
       {success && (
-        <div className="animate-fade-in-out flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <div className="animate-fade-in-out flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
-          <span className="text-sm font-medium text-emerald-700">Session logged!</span>
+          <span className="text-sm font-medium text-emerald-400">Session logged!</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="card space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1.5">Instrument</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Instrument</label>
           <div className="flex flex-wrap gap-2">
             {INSTRUMENTS.map(inst => (
               <button
@@ -112,7 +112,7 @@ export default function LogSession({ userId }) {
                 className={`px-3 py-1.5 rounded-lg text-sm border transition ${
                   instrument === inst
                     ? 'bg-amber-500 border-amber-500 text-white'
-                    : 'border-stone-200 hover:border-stone-300 text-stone-700'
+                    : 'border-white/10 hover:border-white/20 text-slate-400'
                 }`}
               >
                 {inst}
@@ -131,7 +131,7 @@ export default function LogSession({ userId }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1.5">Duration (minutes)</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Duration (minutes)</label>
           <input
             className="input"
             type="number"
@@ -145,7 +145,7 @@ export default function LogSession({ userId }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1.5">What did you work on?</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">What did you work on?</label>
           <textarea
             className="input resize-none"
             rows={3}
@@ -156,7 +156,7 @@ export default function LogSession({ userId }) {
           />
         </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
 
         <button className="btn-primary w-full" type="submit" disabled={loading}>
           {loading ? 'Saving…' : 'Log session'}

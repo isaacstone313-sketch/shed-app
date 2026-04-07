@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import GeoBg from './GeoBg'
 
 export default function UsernameSetup({ userId, onComplete }) {
   const [username, setUsername] = useState('')
@@ -29,11 +30,12 @@ export default function UsernameSetup({ userId, onComplete }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="relative min-h-screen bg-[#0D0D14] flex items-center justify-center px-4 overflow-hidden">
+      <GeoBg rings={4} ringSize={520} dotOpacity={0.06} />
+      <div className="relative z-10 w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Shed</h1>
-          <p className="text-stone-500 text-sm mt-1">Pick a username to get started</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Shed</h1>
+          <p className="text-slate-500 text-sm mt-1">Pick a username to get started</p>
         </div>
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -45,7 +47,7 @@ export default function UsernameSetup({ userId, onComplete }) {
               required
               autoFocus
             />
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="text-sm text-red-400">{error}</p>}
             <button className="btn-primary w-full" disabled={loading}>
               {loading ? 'Saving…' : 'Continue'}
             </button>
