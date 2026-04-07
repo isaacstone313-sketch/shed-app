@@ -140,8 +140,17 @@ export default function Groups({ userId, profile }) {
       {loading ? (
         <div className="text-stone-400 text-sm text-center py-4">Loading…</div>
       ) : myGroups.length === 0 ? (
-        <div className="text-stone-400 text-sm text-center py-4">
-          You're not in any groups yet.
+        <div className="flex flex-col items-center py-10 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center mb-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+          <p className="text-stone-500 text-sm font-medium">No groups yet</p>
+          <p className="text-stone-400 text-xs mt-1 max-w-[200px]">Create a group or join one with an invite code below.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -159,7 +168,7 @@ export default function Groups({ userId, profile }) {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-amber-600 font-medium">Leaderboard →</span>
+                <span className="text-xs text-stone-500 font-medium">Leaderboard →</span>
                 <button
                   onClick={e => {
                     e.stopPropagation()

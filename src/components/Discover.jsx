@@ -90,7 +90,7 @@ export default function Discover({ userId }) {
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-semibold">Discover</h2>
-        <p className="text-stone-500 text-sm mt-0.5">Everyone practicing, right now</p>
+        <p className="text-stone-500 text-sm mt-0.5">The global practice stream</p>
       </div>
 
       {/* Search bar */}
@@ -122,7 +122,15 @@ export default function Discover({ userId }) {
           {searchLoading ? (
             <div className="text-stone-400 text-sm text-center py-4">Searching…</div>
           ) : searchResults.length === 0 ? (
-            <div className="text-stone-400 text-sm text-center py-4">No users found for "{query}"</div>
+            <div className="flex flex-col items-center py-10 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </div>
+              <p className="text-stone-500 text-sm font-medium">No musicians found</p>
+              <p className="text-stone-400 text-xs mt-1">Try a different username</p>
+            </div>
           ) : (
             searchResults.map(profile => (
               <UserRow
@@ -143,8 +151,15 @@ export default function Discover({ userId }) {
           {loading ? (
             <FeedSkeleton />
           ) : sessions.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-stone-400 text-sm">No sessions logged yet. Be the first!</p>
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-stone-100 flex items-center justify-center mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+                </svg>
+              </div>
+              <p className="text-stone-600 font-medium text-sm">No sessions yet</p>
+              <p className="text-stone-400 text-xs mt-1">Be the first to log a practice session.</p>
             </div>
           ) : (
             <>

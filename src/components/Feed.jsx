@@ -3,6 +3,52 @@ import { supabase } from '../lib/supabase'
 import { computeStats } from '../utils/stats'
 import SessionCard from './SessionCard'
 
+function groupByDate(sessions) {
+  const now = new Date()
+  const today = now.toDateString()
+  const yesterday = new Date(now - 86400000).toDateString()
+  const weekAgo = new Date(now - 7 * 86400000)
+
+  const buckets = { Today: [], Yesterday: [], 'This Week': [], Earlier: [] }
+  for (const s of sessions) {
+    const d = new Date(s.created_at)
+    if (d.toDateString() === today) buckets.Today.push(s)
+    else if (d.toDateString() === yesterday) buckets.Yesterday.push(s)
+    else if (d > weekAgo) buckets['This Week'].push(s)
+    else buckets.Earlier.push(s)
+  }
+  return Object.entries(buckets).filter(([, items]) => items.length > 0)
+}
+
+function DateDivider({ label }) {
+  return (
+    <div className="flex items-center gap-3 py-1">
+      <div className="flex-1 h-px bg-stone-200" />
+      <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest shrink-0">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-stone-200" />
+    </div>
+  )
+}
+
+function EmptyFeed() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-stone-100 flex items-center justify-center mb-4">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+        </svg>
+      </div>
+      <p className="text-stone-600 font-medium text-sm">Nothing here yet</p>
+      <p className="text-stone-400 text-xs mt-1 max-w-[220px] leading-relaxed">
+        Log a session, join a group, or follow people to fill your feed.
+      </p>
+    </div>
+  )
+}
+
 export default function Feed({ userId }) {
   const [sessions, setSessions] = useState([])
   const [myStats, setMyStats] = useState(null)
@@ -10,7 +56,6 @@ export default function Feed({ userId }) {
   const [loading, setLoading] = useState(true)
 
   const loadFeed = useCallback(async () => {
-    // Collect IDs: own + group members + people I follow
     const [groupRows, followRows] = await Promise.all([
       supabase.from('group_members').select('group_id').eq('user_id', userId),
       supabase.from('follows').select('following_id').eq('follower_id', userId),
@@ -20,7 +65,6 @@ export default function Feed({ userId }) {
     setFollowingIds(new Set(myFollowingIds))
 
     let memberIds = [userId, ...myFollowingIds]
-
     if (groupRows.data?.length) {
       const groupIds = groupRows.data.map(r => r.group_id)
       const { data: allMembers } = await supabase
@@ -68,44 +112,49 @@ export default function Feed({ userId }) {
     })
   }
 
+  const groups = groupByDate(sessions)
+
   return (
-    <div className="space-y-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Feed</h2>
-          <p className="text-stone-500 text-sm mt-0.5">You, your groups, and people you follow</p>
-        </div>
-        {myStats && (
-          <div className="flex gap-3 text-right shrink-0">
-            <div>
-              <div className="text-base font-semibold leading-tight">{myStats.streak}</div>
-              <div className="text-xs text-stone-400">streak</div>
-            </div>
-            <div>
-              <div className="text-base font-semibold leading-tight">{myStats.totalMinutes}m</div>
-              <div className="text-xs text-stone-400">total</div>
-            </div>
+    <div className="space-y-4">
+      {/* My stats strip */}
+      {myStats && myStats.sessionCount > 0 && (
+        <div className="flex gap-4 px-1">
+          <div className="text-center">
+            <div className="text-sm font-semibold text-amber-500">{myStats.streak} 🔥</div>
+            <div className="text-[10px] text-stone-400">streak</div>
           </div>
-        )}
-      </div>
+          <div className="text-center">
+            <div className="text-sm font-semibold text-stone-900">{myStats.totalMinutes}m</div>
+            <div className="text-[10px] text-stone-400">total</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm font-semibold text-stone-900">{myStats.sessionCount}</div>
+            <div className="text-[10px] text-stone-400">sessions</div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <FeedSkeleton />
       ) : sessions.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-stone-400 text-sm">No sessions yet.</p>
-          <p className="text-stone-400 text-xs mt-1">Log a session, join a group, or follow people to see activity here.</p>
-        </div>
+        <EmptyFeed />
       ) : (
-        <div className="space-y-3">
-          {sessions.map(session => (
-            <SessionCard
-              key={session.id}
-              session={session}
-              userId={userId}
-              isFollowing={followingIds.has(session.user_id)}
-              onFollowChange={handleFollowChange}
-            />
+        <div className="space-y-2">
+          {groups.map(([label, items]) => (
+            <div key={label}>
+              <DateDivider label={label} />
+              <div className="space-y-2 mt-2">
+                {items.map(session => (
+                  <SessionCard
+                    key={session.id}
+                    session={session}
+                    userId={userId}
+                    isFollowing={followingIds.has(session.user_id)}
+                    onFollowChange={handleFollowChange}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -115,7 +164,7 @@ export default function Feed({ userId }) {
 
 function FeedSkeleton() {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {[1, 2, 3].map(i => (
         <div key={i} className="bg-white border border-stone-200 rounded-2xl p-4 animate-pulse">
           <div className="flex gap-2.5 mb-3">
@@ -126,7 +175,7 @@ function FeedSkeleton() {
             </div>
           </div>
           <div className="h-3 bg-stone-100 rounded w-full mb-2" />
-          <div className="h-3 bg-stone-100 rounded w-3/4" />
+          <div className="h-3 bg-stone-100 rounded w-2/3" />
         </div>
       ))}
     </div>
