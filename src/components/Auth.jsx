@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-export default function Auth() {
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+export default function Auth({ initialMode = 'signin', onBack }) {
+  const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -27,8 +27,19 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-stone-50">
       <div className="w-full max-w-sm">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-stone-400 hover:text-stone-600 text-sm mb-6 transition"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back
+          </button>
+        )}
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Shed</h1>
           <p className="text-stone-500 text-sm mt-1">Your music practice log</p>
