@@ -90,10 +90,52 @@ function Chevron({ open }) {
   )
 }
 
-function SessionCard({ session, currentUserId, onKudos }) {
+function SessionCard({ session, currentUserId, userId }) {
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [hasKudosed, setHasKudosed] = useState(session.hasKudosed)
+  const [kudosCount, setKudosCount] = useState(session.kudosCount)
+  const [pending, setPending] = useState(false)
+  const [pop, setPop] = useState(false)
+
   const username = session.profiles?.username ?? 'unknown'
   const isOwn = session.user_id === currentUserId
+
+  async function handleKudos() {
+    if (pending) return
+
+    const wasKudosed = hasKudosed
+    // Optimistic update
+    setHasKudosed(!wasKudosed)
+    setKudosCount(c => wasKudosed ? c - 1 : c + 1)
+    // Scale-pop animation when adding a kudo
+    if (!wasKudosed) {
+      setPop(true)
+      setTimeout(() => setPop(false), 250)
+    }
+
+    setPending(true)
+    try {
+      if (wasKudosed) {
+        const { error } = await supabase
+          .from('kudos')
+          .delete()
+          .eq('session_id', session.id)
+          .eq('user_id', userId)
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('kudos')
+          .insert({ session_id: session.id, user_id: userId })
+        if (error) throw error
+      }
+    } catch {
+      // Rollback on failure
+      setHasKudosed(wasKudosed)
+      setKudosCount(c => wasKudosed ? c + 1 : c - 1)
+    } finally {
+      setPending(false)
+    }
+  }
 
   return (
     <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 transition">
@@ -151,22 +193,33 @@ function SessionCard({ session, currentUserId, onKudos }) {
 
       {/* Kudos bar */}
       <div className="border-t border-stone-100 px-4 py-2.5 flex items-center">
-        <button
-          onClick={() => onKudos(session)}
-          disabled={isOwn}
-          className={`flex items-center gap-1.5 transition rounded-lg px-2 py-1 -ml-2 ${
-            isOwn
-              ? 'text-stone-300 cursor-default'
-              : session.hasKudosed
-              ? 'text-amber-500 hover:text-amber-600'
-              : 'text-stone-400 hover:text-amber-500'
-          }`}
-        >
-          <ThumbsUp filled={session.hasKudosed} />
-          {session.kudosCount > 0 && (
-            <span className="text-xs font-semibold">{session.kudosCount}</span>
-          )}
-        </button>
+        {isOwn ? (
+          <div className="flex items-center gap-1.5 px-2 py-1 -ml-2 text-stone-300">
+            <ThumbsUp filled={false} />
+            {kudosCount > 0 && (
+              <span className="text-xs font-semibold">{kudosCount}</span>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={handleKudos}
+            disabled={pending}
+            style={{
+              transform: pop ? 'scale(1.3)' : 'scale(1)',
+              transition: 'transform 150ms ease, color 150ms ease',
+            }}
+            className={`flex items-center gap-1.5 rounded-lg px-2 py-1 -ml-2 disabled:opacity-60 ${
+              hasKudosed
+                ? 'text-amber-500 hover:text-amber-600'
+                : 'text-stone-400 hover:text-amber-500'
+            }`}
+          >
+            <ThumbsUp filled={hasKudosed} />
+            {kudosCount > 0 && (
+              <span className="text-xs font-semibold">{kudosCount}</span>
+            )}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -235,28 +288,6 @@ export default function Feed({ userId }) {
     loadFeed()
   }, [loadFeed])
 
-  async function handleKudos(session) {
-    // Optimistic update
-    setSessions(prev =>
-      prev.map(s => {
-        if (s.id !== session.id) return s
-        return {
-          ...s,
-          hasKudosed: !s.hasKudosed,
-          kudosCount: s.hasKudosed ? s.kudosCount - 1 : s.kudosCount + 1,
-        }
-      })
-    )
-
-    if (session.hasKudosed) {
-      await supabase.from('kudos').delete()
-        .eq('session_id', session.id)
-        .eq('user_id', userId)
-    } else {
-      await supabase.from('kudos').insert({ session_id: session.id, user_id: userId })
-    }
-  }
-
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between">
@@ -306,7 +337,7 @@ export default function Feed({ userId }) {
               key={session.id}
               session={session}
               currentUserId={userId}
-              onKudos={handleKudos}
+              userId={userId}
             />
           ))}
         </div>
