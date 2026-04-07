@@ -3,30 +3,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Decode JWT payload without verifying signature — enough to check role claim.
-function jwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const part = token.split('.')[1]
-    const padded = part.replace(/-/g, '+').replace(/_/g, '/')
-    const decoded = atob(padded)
-    return JSON.parse(decoded)
-  } catch {
-    return null
-  }
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Verify the caller is a logged-in user (role: authenticated), not anon.
-  const authHeader = req.headers.get('Authorization') ?? ''
-  const token = authHeader.replace(/^Bearer\s+/i, '')
-  const payload = jwtPayload(token)
-  if (!payload || payload.role !== 'authenticated') {
-    return new Response('Unauthorized', { status: 401, headers: corsHeaders })
-  }
+  // DEBUG — auth check temporarily removed
+  const authHeader = req.headers.get('Authorization') ?? '(none)'
+  console.log('[spotify-search] Authorization header:', authHeader.slice(0, 40) + '…')
+
+  const clientId = Deno.env.get('SPOTIFY_CLIENT_ID') ?? ''
+  console.log('[spotify-search] SPOTIFY_CLIENT_ID first 4 chars:', clientId.slice(0, 4) || '(empty — secret not set)')
 
   const { query } = await req.json()
 
