@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 const TABS = [
   { id: 'log', label: 'Log' },
   { id: 'feed', label: 'Feed' },
+  { id: 'discover', label: 'Discover' },
   { id: 'groups', label: 'Groups' },
 ]
 
