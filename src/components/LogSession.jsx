@@ -57,13 +57,14 @@ export default function LogSession({ userId }) {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
         const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
         const { data: { session: authSession } } = await supabase.auth.getSession()
-        const token = authSession?.access_token ?? supabaseAnonKey
+        // Must have a real user token — anon key won't pass the edge function auth check
+        if (!authSession?.access_token) return
 
         const res = await fetch(`${supabaseUrl}/functions/v1/spotify-search`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${authSession.access_token}`,
             'apikey': supabaseAnonKey,
           },
           body: JSON.stringify({ query: spotifyQuery.trim() }),
