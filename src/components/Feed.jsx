@@ -74,7 +74,7 @@ export default function Feed({ userId }) {
 
     const { data: sessionsData } = await supabase
       .from('sessions')
-      .select('*, profiles(username)')
+      .select('*, profiles(username), comments(count)')
       .in('user_id', memberIds)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -93,8 +93,9 @@ export default function Feed({ userId }) {
     const kudos = kudosData ?? []
     const enriched = sessionsData.map(s => ({
       ...s,
-      kudosCount: kudos.filter(k => k.session_id === s.id).length,
-      hasKudosed: kudos.some(k => k.session_id === s.id && k.user_id === userId),
+      kudosCount:   kudos.filter(k => k.session_id === s.id).length,
+      hasKudosed:   kudos.some(k => k.session_id === s.id && k.user_id === userId),
+      commentCount: s.comments?.[0]?.count ?? 0,
     }))
 
     setSessions(enriched)

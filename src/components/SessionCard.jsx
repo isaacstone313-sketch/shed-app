@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import CommentThread from './CommentThread'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -59,13 +60,21 @@ export function formatDuration(min) {
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
-export function Avatar({ username }) {
+export function Avatar({ username, size = 'md' }) {
   const initials = (username ?? '?').slice(0, 2).toUpperCase()
+  const sizeClass = size === 'sm' ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-xs'
   return (
-    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${avatarColor(username)}`}>
+    <div className={`${sizeClass} rounded-full flex items-center justify-center font-bold shrink-0 ${avatarColor(username)}`}>
       {initials}
     </div>
   )
+}
+
+const MOOD_EMOJI = {
+  grinding: '💪',
+  solid:    '👊',
+  flow:     '⚡',
+  rough:    '😮‍💨',
 }
 
 function ThumbsUp({ filled }) {
@@ -115,6 +124,9 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
   const [kudosPending, setKudosPending] = useState(false)
   const [pop, setPop] = useState(false)
   const [followPending, setFollowPending] = useState(false)
+  const [commentsOpen, setCommentsOpen] = useState(false)
+  const [commentCount, setCommentCount] = useState(session.commentCount ?? 0)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const username = session.profiles?.username ?? 'unknown'
   const isOwn = session.user_id === userId
@@ -205,18 +217,36 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
         </div>
 
         {/* Activity meta */}
-        <div className="pr-4 pb-3 flex items-center gap-2.5">
+        <div className="pr-4 pb-3 flex items-center gap-2.5 flex-wrap">
           <span className="bg-white/5 text-slate-400 text-xs font-semibold px-3 py-1 rounded-full">
             {session.instrument}
           </span>
           <span className="text-slate-700 text-sm">·</span>
           <span className="text-sm font-medium text-slate-400">{formatDuration(session.duration_minutes)}</span>
+          {session.mood && MOOD_EMOJI[session.mood] && (
+            <>
+              <span className="text-slate-700 text-sm">·</span>
+              <span className="text-base leading-none" title={session.mood}>{MOOD_EMOJI[session.mood]}</span>
+            </>
+          )}
         </div>
 
         {/* Notes */}
         {session.notes && (
           <div className="pr-4 pb-4">
             <p className="text-[15px] text-slate-300 leading-relaxed">{session.notes}</p>
+          </div>
+        )}
+
+        {/* Photo */}
+        {session.photo_url && (
+          <div className="pr-4 pb-3">
+            <img
+              src={session.photo_url}
+              alt=""
+              className="w-full rounded-xl object-cover max-h-72 cursor-pointer"
+              onClick={() => setLightboxOpen(true)}
+            />
           </div>
         )}
 
@@ -269,8 +299,8 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
           </div>
         )}
 
-        {/* Kudos bar */}
-        <div className="border-t border-white/5 pr-4 py-2.5 flex items-center">
+        {/* Kudos + Comments bar */}
+        <div className="border-t border-white/5 pr-4 py-2.5 flex items-center gap-1">
           {isOwn ? (
             <div className="flex items-center gap-2 px-2 py-1 -ml-2 text-slate-600">
               <ThumbsUp filled={false} />
@@ -289,8 +319,41 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
               {kudosCount > 0 && <span className="text-xs font-semibold">{kudosCount}</span>}
             </button>
           )}
+
+          <button
+            onClick={() => setCommentsOpen(o => !o)}
+            className={`flex items-center gap-1.5 rounded-lg px-2 py-1 transition ${
+              commentsOpen ? 'text-amber-400' : 'text-slate-600 hover:text-slate-400'
+            }`}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            {commentCount > 0 && <span className="text-xs font-semibold">{commentCount}</span>}
+          </button>
         </div>
+
+        {commentsOpen && (
+          <CommentThread
+            sessionId={session.id}
+            userId={userId}
+          />
+        )}
       </div>
+
+      {/* Photo lightbox */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <img
+            src={session.photo_url}
+            alt=""
+            className="max-w-full max-h-full rounded-xl object-contain"
+          />
+        </div>
+      )}
     </div>
   )
 }

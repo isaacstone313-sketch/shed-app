@@ -30,7 +30,7 @@ export default function Discover({ userId }) {
 
     const { data: sessionsData } = await supabase
       .from('sessions')
-      .select('*, profiles(username)')
+      .select('*, profiles(username), comments(count)')
       .order('created_at', { ascending: false })
       .range(fromOffset, fromOffset + PAGE_SIZE - 1)
 
@@ -43,8 +43,9 @@ export default function Discover({ userId }) {
       const kudos = kudosData ?? []
       const enriched = data.map(s => ({
         ...s,
-        kudosCount: kudos.filter(k => k.session_id === s.id).length,
-        hasKudosed: kudos.some(k => k.session_id === s.id && k.user_id === userId),
+        kudosCount:   kudos.filter(k => k.session_id === s.id).length,
+        hasKudosed:   kudos.some(k => k.session_id === s.id && k.user_id === userId),
+        commentCount: s.comments?.[0]?.count ?? 0,
       }))
       replace ? setSessions(enriched) : setSessions(prev => [...prev, ...enriched])
     } else if (replace) {

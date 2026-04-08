@@ -10,9 +10,19 @@ export default {
           '78%': { opacity: '1', transform: 'translateY(0)' },
           '100%':{ opacity: '0', transform: 'translateY(-6px)' },
         },
+        slideInRight: {
+          '0%':   { opacity: '0', transform: 'translateX(20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        slideInLeft: {
+          '0%':   { opacity: '0', transform: 'translateX(-20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
       },
       animation: {
-        'fade-in-out': 'fadeInOut 2.2s ease forwards',
+        'fade-in-out':   'fadeInOut 2.2s ease forwards',
+        'slide-in-right': 'slideInRight 220ms ease-out',
+        'slide-in-left':  'slideInLeft 220ms ease-out',
       },
     },
   },
