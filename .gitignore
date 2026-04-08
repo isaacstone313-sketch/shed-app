@@ -1,6 +1,13 @@
 node_modules
 dist
+
+# Environment files — never commit real credentials
+.env
 .env.local
 .env.*.local
 *.local
+
+# Claude Code project settings — may contain tokens
+.claude/
+
 .DS_Store
