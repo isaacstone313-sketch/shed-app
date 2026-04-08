@@ -388,13 +388,19 @@ export default function Landing({ onSignUp, onSignIn }) {
             <div className="font-semibold text-white">Shed</div>
             <div className="text-slate-600 text-xs mt-1">Foster growth through consistency.</div>
           </div>
-          <div className="flex items-center gap-6 text-sm">
+          <div className="flex flex-wrap items-center gap-6 text-sm">
             <button onClick={onSignUp} className="text-slate-400 hover:text-white transition font-medium">
               Sign up
             </button>
             <button onClick={onSignIn} className="text-slate-400 hover:text-white transition font-medium">
               Log in
             </button>
+            <a href="/privacy" className="text-slate-600 hover:text-slate-400 transition">
+              Privacy
+            </a>
+            <a href="/terms" className="text-slate-600 hover:text-slate-400 transition">
+              Terms
+            </a>
           </div>
         </div>
       </footer>
