@@ -8,7 +8,7 @@ function HighlightedBody({ body }) {
     <span>
       {parts.map((part, i) =>
         /^@\w+$/.test(part)
-          ? <span key={i} className="text-amber-400 font-medium">{part}</span>
+          ? <span key={i} className="font-semibold" style={{ color: '#F59E0B' }}>{part}</span>
           : part
       )}
     </span>
@@ -16,19 +16,23 @@ function HighlightedBody({ body }) {
 }
 
 export default function CommentThread({ sessionId, userId }) {
-  const [comments, setComments]   = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [body, setBody]           = useState('')
-  const [posting, setPosting]     = useState(false)
-  const [replyTo, setReplyTo]     = useState(null) // { id, username }
+  const [comments, setComments] = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [body, setBody]         = useState('')
+  const [posting, setPosting]   = useState(false)
+  const [replyTo, setReplyTo]   = useState(null) // { id, username }
+  const [posted, setPosted]     = useState(false)
   const inputRef = useRef(null)
 
   async function loadComments() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('comments')
       .select('*, profiles(username)')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true })
+
+    console.log('[CommentThread] session:', sessionId, '| rows:', data?.length ?? 0, '| data:', data, '| error:', error)
+
     setComments(data ?? [])
     setLoading(false)
   }
@@ -48,6 +52,8 @@ export default function CommentThread({ sessionId, userId }) {
     if (!error) {
       setBody('')
       setReplyTo(null)
+      setPosted(true)
+      setTimeout(() => setPosted(false), 2200)
       await loadComments()
     }
     setPosting(false)
@@ -84,7 +90,17 @@ export default function CommentThread({ sessionId, userId }) {
 
   return (
     <div className="border-t border-white/5 pt-3 pb-3 space-y-3 pr-4">
-      {topLevel.length === 0 && (
+      {/* "Comment posted!" toast */}
+      {posted && (
+        <div className="animate-fade-in-out flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span className="text-xs font-medium text-emerald-400">Comment posted!</span>
+        </div>
+      )}
+
+      {topLevel.length === 0 && !posted && (
         <p className="text-slate-600 text-xs text-center py-1">No comments yet.</p>
       )}
 
@@ -115,7 +131,7 @@ export default function CommentThread({ sessionId, userId }) {
           {replyTo && (
             <div className="flex items-center gap-1.5 mb-1.5 text-xs text-slate-500">
               <span>
-                Replying to <span className="text-amber-400">@{replyTo.username}</span>
+                Replying to <span className="font-semibold" style={{ color: '#F59E0B' }}>@{replyTo.username}</span>
               </span>
               <button
                 onClick={() => { setReplyTo(null); setBody('') }}
@@ -127,7 +143,7 @@ export default function CommentThread({ sessionId, userId }) {
           )}
           <input
             ref={inputRef}
-            className="input text-sm py-2"
+            className="input text-sm py-2 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50"
             placeholder="Add a comment…"
             value={body}
             onChange={e => setBody(e.target.value)}
@@ -149,8 +165,8 @@ export default function CommentThread({ sessionId, userId }) {
 
 function CommentRow({ comment, userId, onReply, onDelete, isReply }) {
   const username = comment.profiles?.username ?? 'unknown'
-  const isOwn = comment.user_id === userId
-  const timeStr = new Date(comment.created_at).toLocaleTimeString('en-US', {
+  const isOwn    = comment.user_id === userId
+  const timeStr  = new Date(comment.created_at).toLocaleTimeString('en-US', {
     hour: 'numeric', minute: '2-digit',
   })
 
@@ -159,7 +175,7 @@ function CommentRow({ comment, userId, onReply, onDelete, isReply }) {
       <Avatar username={username} size="sm" />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5 flex-wrap">
-          <span className="text-xs font-semibold text-white">{username}</span>
+          <span className="text-xs font-bold" style={{ color: '#F59E0B' }}>{username}</span>
           <span className="text-[10px] text-slate-600">{timeStr}</span>
         </div>
         <p className="text-sm text-slate-300 leading-relaxed mt-0.5 break-words">
