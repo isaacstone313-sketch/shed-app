@@ -3,17 +3,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Decode JWT payload without verifying signature — sufficient to confirm role.
+function jwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split('.')[1]
+    const decoded = atob(part.replace(/-/g, '+').replace(/_/g, '/'))
+    return JSON.parse(decoded)
+  } catch {
+    return null
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // DEBUG — auth check temporarily removed
-  const authHeader = req.headers.get('Authorization') ?? '(none)'
-  console.log('[spotify-search] Authorization header:', authHeader.slice(0, 40) + '…')
-
-  const clientId = Deno.env.get('SPOTIFY_CLIENT_ID') ?? ''
-  console.log('[spotify-search] SPOTIFY_CLIENT_ID first 4 chars:', clientId.slice(0, 4) || '(empty — secret not set)')
+  // Verify the caller is an authenticated user (not anon).
+  // supabase.functions.invoke() always passes the user's JWT automatically.
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+  const payload = jwtPayload(token)
+  if (!payload || payload.role !== 'authenticated') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
 
   const { query } = await req.json()
 
@@ -24,7 +39,8 @@ Deno.serve(async (req: Request) => {
   }
 
   // Get Spotify access token via Client Credentials flow
-  const clientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET')
+  const clientId = Deno.env.get('SPOTIFY_CLIENT_ID') ?? ''
+  const clientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET') ?? ''
   const credentials = btoa(`${clientId}:${clientSecret}`)
 
   const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
@@ -65,7 +81,6 @@ Deno.serve(async (req: Request) => {
     name: track.name,
     artist: track.artists.map((a: any) => a.name).join(', '),
     album: track.album.name,
-    // Prefer the smallest image (index 2 = ~64px), fall back to largest
     artwork: track.album.images[2]?.url ?? track.album.images[0]?.url ?? null,
     duration_ms: track.duration_ms,
     url: `https://open.spotify.com/track/${track.id}`,

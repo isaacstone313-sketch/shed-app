@@ -54,22 +54,10 @@ export default function LogSession({ userId }) {
     setSpotifySearching(true)
     debounceRef.current = setTimeout(async () => {
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-        const { data: { session: authSession } } = await supabase.auth.getSession()
-        // Must have a real user token — anon key won't pass the edge function auth check
-        if (!authSession?.access_token) return
-
-        const res = await fetch(`${supabaseUrl}/functions/v1/spotify-search`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authSession.access_token}`,
-            'apikey': supabaseAnonKey,
-          },
-          body: JSON.stringify({ query: spotifyQuery.trim() }),
+        const { data, error } = await supabase.functions.invoke('spotify-search', {
+          body: { query: spotifyQuery.trim() },
         })
-        const data = await res.json()
+        if (error) throw error
         setSpotifyResults(Array.isArray(data) ? data : [])
       } catch {
         setSpotifyResults([])
