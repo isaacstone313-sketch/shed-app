@@ -13,11 +13,12 @@ import Groups from './components/Groups'
 import Profile from './components/Profile'
 
 export default function App() {
-  const [session, setSession]     = useState(undefined)  // undefined = loading
-  const [profile, setProfile]     = useState(null)
-  const [view, setView]           = useState('feed')
-  const [authMode, setAuthMode]   = useState(null)       // null | 'signup' | 'signin'
+  const [session, setSession]         = useState(undefined)  // undefined = loading
+  const [profile, setProfile]         = useState(null)
+  const [view, setView]               = useState('home')
+  const [authMode, setAuthMode]       = useState(null)       // null | 'signup' | 'signin'
   const [unreadCount, setUnreadCount] = useState(0)
+  const [activityOpen, setActivityOpen] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -91,16 +92,38 @@ export default function App() {
   // Full app
   return (
     <div className="min-h-screen bg-[#0D0D14]">
-      <Nav />
+      <Nav
+        unreadCount={unreadCount}
+        onBellClick={() => setActivityOpen(o => !o)}
+      />
+
+      {/* Activity slide-down panel */}
+      {activityOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-20 bg-black/50"
+            onClick={() => setActivityOpen(false)}
+          />
+          <div className="fixed top-12 inset-x-0 z-30 max-w-2xl mx-auto bg-[#0D0D14] border-b border-x border-white/[0.08] rounded-b-2xl shadow-2xl max-h-[75vh] overflow-y-auto animate-slide-down">
+            <div className="px-4 pt-4 pb-6">
+              <Activity
+                userId={session.user.id}
+                onRead={() => setUnreadCount(0)}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
       <main className="max-w-2xl mx-auto px-4 pt-6 pb-36">
-        {view === 'feed'     && <Feed         userId={session.user.id} />}
-        {view === 'discover' && <Discover    userId={session.user.id} />}
+        {view === 'home'     && <Feed         userId={session.user.id} />}
+        {view === 'discover' && <Discover     userId={session.user.id} />}
         {view === 'log'      && <LogSessionFlow userId={session.user.id} />}
-        {view === 'activity' && <Activity    userId={session.user.id} onRead={() => setUnreadCount(0)} />}
-        {view === 'groups'   && <Groups      userId={session.user.id} profile={profile} />}
-        {view === 'profile'  && <Profile     userId={session.user.id} />}
+        {view === 'groups'   && <Groups       userId={session.user.id} profile={profile} />}
+        {view === 'profile'  && <Profile      userId={session.user.id} />}
       </main>
-      <BottomNav view={view} setView={setView} unreadCount={unreadCount} />
+
+      <BottomNav view={view} setView={v => { setView(v); setActivityOpen(false) }} />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { computeStats } from '../utils/stats'
 import SessionCard from './SessionCard'
+import RecoRow from './RecoRow'
 
 function groupByDate(sessions) {
   const now = new Date()
@@ -18,6 +19,23 @@ function groupByDate(sessions) {
     else buckets.Earlier.push(s)
   }
   return Object.entries(buckets).filter(([, items]) => items.length > 0)
+}
+
+// Build a flat list of render items, inserting a reco placeholder after every 4th session
+function buildFeedItems(groups) {
+  const items = []
+  let sessionCount = 0
+  for (const [label, sessions] of groups) {
+    items.push({ type: 'divider', label })
+    for (const session of sessions) {
+      items.push({ type: 'session', session })
+      sessionCount++
+      if (sessionCount % 4 === 0) {
+        items.push({ type: 'reco', key: `reco-${sessionCount}` })
+      }
+    }
+  }
+  return items
 }
 
 function DateDivider({ label }) {
@@ -50,10 +68,10 @@ function EmptyFeed() {
 }
 
 export default function Feed({ userId }) {
-  const [sessions, setSessions] = useState([])
-  const [myStats, setMyStats] = useState(null)
+  const [sessions, setSessions]     = useState([])
+  const [myStats, setMyStats]       = useState(null)
   const [followingIds, setFollowingIds] = useState(new Set())
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]       = useState(true)
 
   const loadFeed = useCallback(async () => {
     const [groupRows, followRows] = await Promise.all([
@@ -114,6 +132,7 @@ export default function Feed({ userId }) {
   }
 
   const groups = groupByDate(sessions)
+  const feedItems = buildFeedItems(groups)
 
   return (
     <div className="space-y-4">
@@ -140,23 +159,31 @@ export default function Feed({ userId }) {
       ) : sessions.length === 0 ? (
         <EmptyFeed />
       ) : (
-        <div className="space-y-1">
-          {groups.map(([label, items]) => (
-            <div key={label}>
-              <DateDivider label={label} />
-              <div className="space-y-3">
-                {items.map(session => (
-                  <SessionCard
-                    key={session.id}
-                    session={session}
-                    userId={userId}
-                    isFollowing={followingIds.has(session.user_id)}
-                    onFollowChange={handleFollowChange}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="space-y-3">
+          {feedItems.map((item, i) => {
+            if (item.type === 'divider') {
+              return <DateDivider key={`d-${item.label}`} label={item.label} />
+            }
+            if (item.type === 'reco') {
+              return (
+                <RecoRow
+                  key={item.key}
+                  userId={userId}
+                  followingIds={followingIds}
+                  onFollowChange={handleFollowChange}
+                />
+              )
+            }
+            return (
+              <SessionCard
+                key={item.session.id}
+                session={item.session}
+                userId={userId}
+                isFollowing={followingIds.has(item.session.user_id)}
+                onFollowChange={handleFollowChange}
+              />
+            )
+          })}
         </div>
       )}
     </div>

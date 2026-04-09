@@ -18,11 +18,16 @@ export default {
           '0%':   { opacity: '0', transform: 'translateX(-20px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
+        slideDown: {
+          '0%':   { opacity: '0', transform: 'translateY(-8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
-        'fade-in-out':   'fadeInOut 2.2s ease forwards',
+        'fade-in-out':    'fadeInOut 2.2s ease forwards',
         'slide-in-right': 'slideInRight 220ms ease-out',
         'slide-in-left':  'slideInLeft 220ms ease-out',
+        'slide-down':     'slideDown 200ms ease-out',
       },
     },
   },

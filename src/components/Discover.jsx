@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import SessionCard, { Avatar } from './SessionCard'
+import RecoRow from './RecoRow'
 
 const PAGE_SIZE = 20
 
@@ -93,6 +94,16 @@ export default function Discover({ userId }) {
         <h2 className="text-lg font-semibold text-white">Discover</h2>
         <p className="text-slate-500 text-sm mt-0.5">The global practice stream</p>
       </div>
+
+      {/* Suggested for you — hidden while searching */}
+      {!isSearching && (
+        <RecoRow
+          userId={userId}
+          followingIds={followingIds}
+          onFollowChange={handleFollowChange}
+          title="Suggested for you"
+        />
+      )}
 
       {/* Search bar */}
       <div className="relative">
