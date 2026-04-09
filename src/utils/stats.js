@@ -24,6 +24,29 @@ export function calculateStreak(sessions) {
   return streak
 }
 
+export function calculateBestStreak(sessions) {
+  if (!sessions.length) return 0
+
+  const uniqueDates = [
+    ...new Set(
+      sessions.map(s => new Date(s.created_at).toLocaleDateString('en-CA'))
+    ),
+  ].sort((a, b) => a.localeCompare(b)) // ascending
+
+  let best = 1
+  let current = 1
+
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const prev = new Date(uniqueDates[i - 1])
+    const curr = new Date(uniqueDates[i])
+    const diffDays = Math.round((curr - prev) / 86400000)
+    if (diffDays === 1) { current++; if (current > best) best = current }
+    else current = 1
+  }
+
+  return best
+}
+
 export function computeStats(sessions) {
   return {
     totalMinutes: sessions.reduce((sum, s) => sum + s.duration_minutes, 0),

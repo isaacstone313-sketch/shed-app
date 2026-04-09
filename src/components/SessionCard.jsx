@@ -60,9 +60,22 @@ export function formatDuration(min) {
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
-export function Avatar({ username, size = 'md' }) {
+export function Avatar({ username, size = 'md', avatarUrl }) {
+  const sizeClass = size === 'sm' ? 'w-7 h-7 text-[10px]'
+    : size === 'lg' ? 'w-20 h-20 text-2xl'
+    : 'w-9 h-9 text-xs'
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={username ?? ''}
+        className={`${sizeClass} rounded-full object-cover shrink-0`}
+      />
+    )
+  }
+
   const initials = (username ?? '?').slice(0, 2).toUpperCase()
-  const sizeClass = size === 'sm' ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-xs'
   return (
     <div className={`${sizeClass} rounded-full flex items-center justify-center font-bold shrink-0 ${avatarColor(username)}`}>
       {initials}
@@ -128,7 +141,8 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
   const [commentCount, setCommentCount] = useState(session.commentCount ?? 0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
 
-  const username = session.profiles?.username ?? 'unknown'
+  const username  = session.profiles?.username ?? 'unknown'
+  const avatarUrl = session.profiles?.avatar_url ?? null
   const isOwn = session.user_id === userId
   const showFollow = !isOwn && onFollowChange != null && isFollowing != null
   const accent = instrumentAccent(session.instrument)
@@ -193,7 +207,7 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
       <div className="pl-5">
         {/* Header */}
         <div className="pr-4 pt-4 pb-3 flex items-start gap-3">
-          <Avatar username={username} />
+          <Avatar username={username} avatarUrl={avatarUrl} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[15px] font-semibold text-white">{username}</span>

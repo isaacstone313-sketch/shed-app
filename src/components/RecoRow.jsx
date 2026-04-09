@@ -6,7 +6,7 @@ async function fetchRecommendations(userId, followingIds) {
   // Profiles with session counts, excluding self
   const { data: profilesData } = await supabase
     .from('profiles')
-    .select('id, username, sessions(count)')
+    .select('id, username, avatar_url, sessions(count)')
     .neq('id', userId)
     .limit(20)
 
@@ -31,6 +31,7 @@ async function fetchRecommendations(userId, followingIds) {
     .map(p => ({
       id:           p.id,
       username:     p.username,
+      avatarUrl:    p.avatar_url ?? null,
       sessionCount: p.sessions?.[0]?.count ?? 0,
       instrument:   instrumentMap[p.id] ?? null,
     }))
@@ -70,7 +71,7 @@ function RecoCard({ profile, userId, onFollowChange }) {
 
   return (
     <div className="bg-[#1A1A27] border border-white/[0.06] rounded-2xl p-3.5 w-36 shrink-0 flex flex-col items-center gap-2 text-center">
-      <Avatar username={profile.username} />
+      <Avatar username={profile.username} avatarUrl={profile.avatarUrl} />
       <div className="w-full">
         <p className="text-sm font-semibold text-white leading-tight truncate">{profile.username}</p>
         {profile.instrument && (

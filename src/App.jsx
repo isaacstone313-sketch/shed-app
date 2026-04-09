@@ -11,14 +11,16 @@ import Discover from './components/Discover'
 import Activity from './components/Activity'
 import Groups from './components/Groups'
 import Profile from './components/Profile'
+import Settings from './components/Settings'
 
 export default function App() {
   const [session, setSession]         = useState(undefined)  // undefined = loading
   const [profile, setProfile]         = useState(null)
   const [view, setView]               = useState('home')
   const [authMode, setAuthMode]       = useState(null)       // null | 'signup' | 'signin'
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadCount, setUnreadCount]   = useState(0)
   const [activityOpen, setActivityOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -94,7 +96,8 @@ export default function App() {
     <div className="min-h-screen bg-[#0D0D14]">
       <Nav
         unreadCount={unreadCount}
-        onBellClick={() => setActivityOpen(o => !o)}
+        onBellClick={() => { setActivityOpen(o => !o); setSettingsOpen(false) }}
+        onGearClick={() => { setSettingsOpen(true); setActivityOpen(false) }}
       />
 
       {/* Activity slide-down panel */}
@@ -120,10 +123,19 @@ export default function App() {
         {view === 'discover' && <Discover     userId={session.user.id} />}
         {view === 'log'      && <LogSessionFlow userId={session.user.id} />}
         {view === 'groups'   && <Groups       userId={session.user.id} profile={profile} />}
-        {view === 'profile'  && <Profile      userId={session.user.id} />}
+        {view === 'profile'  && <Profile      userId={session.user.id} profile={profile} />}
       </main>
 
-      <BottomNav view={view} setView={v => { setView(v); setActivityOpen(false) }} />
+      <BottomNav view={view} setView={v => { setView(v); setActivityOpen(false); setSettingsOpen(false) }} />
+
+      {settingsOpen && (
+        <Settings
+          userId={session.user.id}
+          profile={profile}
+          onProfileUpdate={setProfile}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </div>
   )
 }

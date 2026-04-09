@@ -31,7 +31,7 @@ export default function Discover({ userId }) {
 
     const { data: sessionsData } = await supabase
       .from('sessions')
-      .select('*, profiles(username), comments(count)')
+      .select('*, profiles(username, avatar_url), comments(count)')
       .order('created_at', { ascending: false })
       .range(fromOffset, fromOffset + PAGE_SIZE - 1)
 
@@ -68,7 +68,7 @@ export default function Discover({ userId }) {
     debounceRef.current = setTimeout(async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('id, username')
+        .select('id, username, avatar_url')
         .ilike('username', `%${query.trim()}%`)
         .neq('id', userId)
         .limit(10)
@@ -231,7 +231,7 @@ function UserRow({ profile, userId, isFollowing, onFollowChange }) {
 
   return (
     <div className="bg-[#16161F] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
-      <Avatar username={profile.username} />
+      <Avatar username={profile.username} avatarUrl={profile.avatar_url} />
       <span className="flex-1 text-sm font-medium text-white">{profile.username}</span>
       <button
         onClick={handleFollow}

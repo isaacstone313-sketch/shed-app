@@ -35,7 +35,7 @@ export default function Activity({ userId, onRead }) {
         .from('notifications')
         .select(`
           *,
-          actor:profiles!notifications_actor_id_fkey(username),
+          actor:profiles!notifications_actor_id_fkey(username, avatar_url),
           sessions(instrument, notes)
         `)
         .eq('user_id', userId)
@@ -121,7 +121,7 @@ export default function Activity({ userId, onRead }) {
               )}
 
               <div className={`flex items-start gap-3 px-4 py-3.5 ${unread ? 'pl-5' : ''}`}>
-                <Avatar username={username} />
+                <Avatar username={username} avatarUrl={n.actor?.avatar_url} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-slate-300 leading-snug">
                     <span className="font-bold" style={{ color: '#F59E0B' }}>{username}</span>

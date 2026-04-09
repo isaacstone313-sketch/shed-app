@@ -92,7 +92,7 @@ export default function Feed({ userId }) {
 
     const { data: sessionsData } = await supabase
       .from('sessions')
-      .select('*, profiles(username), comments(count)')
+      .select('*, profiles(username, avatar_url), comments(count)')
       .in('user_id', memberIds)
       .order('created_at', { ascending: false })
       .limit(50)

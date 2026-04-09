@@ -22,12 +22,17 @@ export default {
           '0%':   { opacity: '0', transform: 'translateY(-8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        slideInPanel: {
+          '0%':   { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
       },
       animation: {
         'fade-in-out':    'fadeInOut 2.2s ease forwards',
         'slide-in-right': 'slideInRight 220ms ease-out',
         'slide-in-left':  'slideInLeft 220ms ease-out',
         'slide-down':     'slideDown 200ms ease-out',
+        'slide-in-panel': 'slideInPanel 280ms ease-out',
       },
     },
   },

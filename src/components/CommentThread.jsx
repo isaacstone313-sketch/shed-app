@@ -27,7 +27,7 @@ export default function CommentThread({ sessionId, userId }) {
   async function loadComments() {
     const { data, error } = await supabase
       .from('comments')
-      .select('*, profiles(username)')
+      .select('*, profiles(username, avatar_url)')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true })
 
@@ -164,7 +164,8 @@ export default function CommentThread({ sessionId, userId }) {
 }
 
 function CommentRow({ comment, userId, onReply, onDelete, isReply }) {
-  const username = comment.profiles?.username ?? 'unknown'
+  const username  = comment.profiles?.username ?? 'unknown'
+  const avatarUrl = comment.profiles?.avatar_url ?? null
   const isOwn    = comment.user_id === userId
   const timeStr  = new Date(comment.created_at).toLocaleTimeString('en-US', {
     hour: 'numeric', minute: '2-digit',
@@ -172,7 +173,7 @@ function CommentRow({ comment, userId, onReply, onDelete, isReply }) {
 
   return (
     <div className="flex gap-2 group">
-      <Avatar username={username} size="sm" />
+      <Avatar username={username} size="sm" avatarUrl={avatarUrl} />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5 flex-wrap">
           <span className="text-xs font-bold" style={{ color: '#F59E0B' }}>{username}</span>
