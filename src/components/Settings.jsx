@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import imageCompression from 'browser-image-compression'
 import { Avatar } from './SessionCard'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 function Section({ title, children }) {
   return (
@@ -34,6 +35,9 @@ export default function Settings({ userId, profile, onProfileUpdate, onClose }) 
   const [emailMsg, setEmailMsg]       = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [pwMsg, setPwMsg]             = useState('')
+
+  // Push notifications
+  const push = usePushNotifications(userId)
 
   // Danger zone
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -256,6 +260,47 @@ export default function Settings({ userId, profile, onProfileUpdate, onClose }) 
             </button>
           </div>
         </Section>
+
+        {/* ── Notifications ── */}
+        {push.isSupported && (
+          <Section title="Notifications">
+            <div className="flex items-center gap-4">
+              {/* Bell icon */}
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-200">Push notifications</p>
+                <p className="text-xs text-slate-500 mt-0.5">Kudos, comments, and follows</p>
+              </div>
+              {/* Toggle */}
+              {push.permission === 'denied' ? null : (
+                <button
+                  onClick={push.isSubscribed ? push.unsubscribe : push.subscribe}
+                  disabled={push.loading}
+                  className={`relative shrink-0 w-12 h-6 rounded-full border transition-colors duration-200 disabled:opacity-50 ${
+                    push.isSubscribed
+                      ? 'bg-amber-500 border-amber-500'
+                      : 'bg-transparent border-white/20'
+                  }`}
+                  aria-label="Toggle push notifications"
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                    push.isSubscribed ? 'translate-x-6' : 'translate-x-0'
+                  }`} />
+                </button>
+              )}
+            </div>
+            {push.permission === 'denied' && (
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Notifications are blocked. To enable them, open your browser settings, find Shed under site permissions, and set Notifications to Allow.
+              </p>
+            )}
+          </Section>
+        )}
 
         {/* ── Danger zone ── */}
         <Section title="Danger zone">

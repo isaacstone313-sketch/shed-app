@@ -164,6 +164,19 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
       } else {
         const { error } = await supabase.from('kudos').insert({ session_id: session.id, user_id: userId })
         if (error) throw error
+        // Notify the session owner (fire-and-forget — don't let push failure affect the UI)
+        if (session.user_id !== userId) {
+          const { data: me } = await supabase
+            .from('profiles').select('username').eq('id', userId).single()
+          supabase.functions.invoke('send-notification', {
+            body: {
+              userId: session.user_id,
+              title:  '🎵 New Kudos!',
+              body:   `${me?.username ?? 'Someone'} gave your ${session.instrument ?? 'session'} a kudo`,
+              url:    '/',
+            },
+          })
+        }
       }
     } catch {
       setHasKudosed(wasKudosed)
