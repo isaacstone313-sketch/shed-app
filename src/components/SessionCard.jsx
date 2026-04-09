@@ -129,7 +129,7 @@ function spotifyTrackId(url) {
  *   isFollowing    – boolean | null (null = hide follow button)
  *   onFollowChange – (targetUserId, nowFollowing) => void
  */
-export default function SessionCard({ session, userId, isFollowing, onFollowChange }) {
+export default function SessionCard({ session, userId, isFollowing, onFollowChange, autoExpandComments }) {
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [spotifyOpen, setSpotifyOpen] = useState(false)
   const [hasKudosed, setHasKudosed] = useState(session.hasKudosed)
@@ -137,7 +137,7 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
   const [kudosPending, setKudosPending] = useState(false)
   const [pop, setPop] = useState(false)
   const [followPending, setFollowPending] = useState(false)
-  const [commentsOpen, setCommentsOpen] = useState(false)
+  const [commentsOpen, setCommentsOpen] = useState(autoExpandComments ?? false)
   const [commentCount, setCommentCount] = useState(session.commentCount ?? 0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
 

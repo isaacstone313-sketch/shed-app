@@ -12,6 +12,8 @@ import Activity from './components/Activity'
 import Groups from './components/Groups'
 import Profile from './components/Profile'
 import Settings from './components/Settings'
+import SessionDetail from './components/SessionDetail'
+import UserProfile from './components/UserProfile'
 
 export default function App() {
   const [session, setSession]         = useState(undefined)  // undefined = loading
@@ -21,6 +23,9 @@ export default function App() {
   const [unreadCount, setUnreadCount]   = useState(0)
   const [activityOpen, setActivityOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // notification navigation
+  const [navDetail, setNavDetail] = useState(null) // { type:'session', sessionId, expandComments } | { type:'user', userId } | null
+  const [prevView, setPrevView]   = useState('home')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -100,6 +105,7 @@ export default function App() {
         onGearClick={() => { setSettingsOpen(true); setActivityOpen(false) }}
       />
 
+
       {/* Activity slide-down panel */}
       {activityOpen && (
         <>
@@ -112,6 +118,12 @@ export default function App() {
               <Activity
                 userId={session.user.id}
                 onRead={() => setUnreadCount(0)}
+                onNavigate={target => {
+                  setActivityOpen(false)
+                  setPrevView(view)
+                  setNavDetail(target)
+                  setView(target.type === 'user' ? 'userProfile' : 'sessionDetail')
+                }}
               />
             </div>
           </div>
@@ -119,14 +131,29 @@ export default function App() {
       )}
 
       <main className="max-w-2xl mx-auto px-4 pt-6 pb-36">
-        {view === 'home'     && <Feed         userId={session.user.id} />}
-        {view === 'discover' && <Discover     userId={session.user.id} />}
-        {view === 'log'      && <LogSessionFlow userId={session.user.id} />}
-        {view === 'groups'   && <Groups       userId={session.user.id} profile={profile} />}
-        {view === 'profile'  && <Profile      userId={session.user.id} profile={profile} />}
+        {view === 'home'          && <Feed            userId={session.user.id} />}
+        {view === 'discover'      && <Discover        userId={session.user.id} />}
+        {view === 'log'           && <LogSessionFlow  userId={session.user.id} />}
+        {view === 'groups'        && <Groups          userId={session.user.id} profile={profile} />}
+        {view === 'profile'       && <Profile         userId={session.user.id} profile={profile} />}
+        {view === 'sessionDetail' && navDetail?.type === 'session' && (
+          <SessionDetail
+            sessionId={navDetail.sessionId}
+            expandComments={navDetail.expandComments}
+            currentUserId={session.user.id}
+            onBack={() => { setView(prevView); setNavDetail(null) }}
+          />
+        )}
+        {view === 'userProfile' && navDetail?.type === 'user' && (
+          <UserProfile
+            viewUserId={navDetail.userId}
+            currentUserId={session.user.id}
+            onBack={() => { setView(prevView); setNavDetail(null) }}
+          />
+        )}
       </main>
 
-      <BottomNav view={view} setView={v => { setView(v); setActivityOpen(false); setSettingsOpen(false) }} />
+      <BottomNav view={view} setView={v => { setView(v); setActivityOpen(false); setSettingsOpen(false); setNavDetail(null) }} />
 
       {settingsOpen && (
         <Settings

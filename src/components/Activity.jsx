@@ -25,7 +25,21 @@ function actionText(type, instrument) {
   }
 }
 
-export default function Activity({ userId, onRead }) {
+function navTarget(n) {
+  switch (n.type) {
+    case 'follow':
+      return { type: 'user', userId: n.actor_id }
+    case 'kudo':
+      return { type: 'session', sessionId: n.session_id, expandComments: false }
+    case 'comment':
+    case 'reply':
+      return { type: 'session', sessionId: n.session_id, expandComments: true }
+    default:
+      return null
+  }
+}
+
+export default function Activity({ userId, onRead, onNavigate }) {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading]             = useState(true)
 
@@ -45,13 +59,9 @@ export default function Activity({ userId, onRead }) {
       setNotifications(data ?? [])
       setLoading(false)
 
-      // Mark all as read
       const unreadIds = (data ?? []).filter(n => !n.read).map(n => n.id)
       if (unreadIds.length) {
-        await supabase
-          .from('notifications')
-          .update({ read: true })
-          .in('id', unreadIds)
+        await supabase.from('notifications').update({ read: true }).in('id', unreadIds)
         onRead?.()
       }
     }
@@ -105,22 +115,22 @@ export default function Activity({ userId, onRead }) {
           const username   = n.actor?.username ?? 'someone'
           const instrument = n.sessions?.instrument
           const unread     = !n.read
+          const target     = navTarget(n)
 
           return (
-            <div
+            <button
               key={n.id}
-              className={`relative bg-[#16161F] border rounded-2xl overflow-hidden transition ${
-                unread
-                  ? 'border-amber-500/20'
-                  : 'border-white/[0.06]'
-              }`}
+              onClick={() => target && onNavigate?.(target)}
+              className={`relative w-full text-left bg-[#16161F] border rounded-2xl overflow-hidden transition active:bg-white/[0.04] active:scale-[0.99] ${
+                unread ? 'border-amber-500/20' : 'border-white/[0.06]'
+              } ${target ? 'cursor-pointer hover:border-white/10' : 'cursor-default'}`}
             >
               {/* Unread accent bar */}
               {unread && (
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500/60 rounded-l-2xl" />
               )}
 
-              <div className={`flex items-start gap-3 px-4 py-3.5 ${unread ? 'pl-5' : ''}`}>
+              <div className={`flex items-center gap-3 px-4 py-3.5 ${unread ? 'pl-5' : ''}`}>
                 <Avatar username={username} avatarUrl={n.actor?.avatar_url} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-slate-300 leading-snug">
@@ -128,18 +138,24 @@ export default function Activity({ userId, onRead }) {
                     {' '}
                     <span>{actionText(n.type, instrument)}</span>
                   </p>
-                  {(n.type === 'comment') && n.sessions?.notes && (
+                  {(n.type === 'comment' || n.type === 'reply') && n.sessions?.notes && (
                     <p className="text-xs text-slate-600 mt-0.5 line-clamp-1">
                       "{n.sessions.notes}"
                     </p>
                   )}
                   <p className="text-[11px] text-slate-600 mt-1">{timeAgo(n.created_at)}</p>
                 </div>
-                {unread && (
-                  <div className="w-2 h-2 rounded-full bg-amber-500 mt-1 shrink-0" />
-                )}
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {unread && <div className="w-2 h-2 rounded-full bg-amber-500" />}
+                  {target && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  )}
+                </div>
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
