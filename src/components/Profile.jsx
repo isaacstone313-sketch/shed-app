@@ -154,7 +154,7 @@ function PracticeCalendar({ userId }) {
 
 // ── Main Profile component ────────────────────────────────────────────────────
 
-export default function Profile({ userId, profile: profileProp }) {
+export default function Profile({ userId, profile: profileProp, onViewSessions }) {
   const [data, setData]     = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -243,10 +243,13 @@ export default function Profile({ userId, profile: profileProp }) {
             <div className="text-2xl font-bold text-amber-500 leading-none">{weekMinutes}<span className="text-base font-semibold text-amber-600/70">m</span></div>
             <div className="text-[11px] text-slate-500 mt-1.5 uppercase tracking-wide">minutes</div>
           </div>
-          <div className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-4 text-center">
+          <button
+            onClick={() => onViewSessions?.()}
+            className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-4 text-center hover:border-white/10 transition active:scale-[0.97]"
+          >
             <div className="text-2xl font-bold text-white leading-none">{weekSessions}</div>
             <div className="text-[11px] text-slate-500 mt-1.5 uppercase tracking-wide">sessions</div>
-          </div>
+          </button>
           <div className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-4 text-center">
             <div className="text-2xl font-bold text-amber-500 leading-none">{stats.streak}</div>
             <div className="text-[11px] text-slate-500 mt-1.5 uppercase tracking-wide">streak 🔥</div>
@@ -264,14 +267,20 @@ export default function Profile({ userId, profile: profileProp }) {
       <div>
         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2.5">All time</p>
         <div className="flex gap-2">
-          <div className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-5 px-4 text-center">
+          <button
+            onClick={() => onViewSessions?.()}
+            className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-5 px-4 text-center hover:border-white/10 transition active:scale-[0.97]"
+          >
             <div className="text-3xl font-bold text-white leading-none">{bestStreak}</div>
             <div className="text-[11px] text-slate-500 mt-2 uppercase tracking-wide">best streak 🏆</div>
-          </div>
-          <div className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-5 px-4 text-center">
+          </button>
+          <button
+            onClick={() => onViewSessions?.()}
+            className="flex-1 bg-[#16161F] border border-white/[0.06] rounded-2xl py-5 px-4 text-center hover:border-white/10 transition active:scale-[0.97]"
+          >
             <div className="text-3xl font-bold text-white leading-none">{totalHours}<span className="text-xl font-semibold text-slate-500">h</span></div>
             <div className="text-[11px] text-slate-500 mt-2 uppercase tracking-wide">total hours</div>
-          </div>
+          </button>
         </div>
       </div>
 

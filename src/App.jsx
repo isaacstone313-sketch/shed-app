@@ -14,6 +14,7 @@ import Profile from './components/Profile'
 import Settings from './components/Settings'
 import SessionDetail from './components/SessionDetail'
 import UserProfile from './components/UserProfile'
+import MySessions from './components/MySessions'
 
 export default function App() {
   const [session, setSession]         = useState(undefined)  // undefined = loading
@@ -135,7 +136,8 @@ export default function App() {
         {view === 'discover'      && <Discover        userId={session.user.id} />}
         {view === 'log'           && <LogSessionFlow  userId={session.user.id} />}
         {view === 'groups'        && <Groups          userId={session.user.id} profile={profile} />}
-        {view === 'profile'       && <Profile         userId={session.user.id} profile={profile} />}
+        {view === 'profile'       && <Profile         userId={session.user.id} profile={profile} onViewSessions={() => { setPrevView('profile'); setView('mySessions') }} />}
+        {view === 'mySessions'    && <MySessions      userId={session.user.id} onBack={() => setView('profile')} />}
         {view === 'sessionDetail' && navDetail?.type === 'session' && (
           <SessionDetail
             sessionId={navDetail.sessionId}
