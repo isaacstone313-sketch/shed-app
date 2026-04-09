@@ -403,6 +403,7 @@ export default function Landing({ onSignUp, onSignIn }) {
             </a>
           </div>
         </div>
+        <p className="text-center text-slate-700 text-xs mt-6">© 2026 Shed. All rights reserved.</p>
       </footer>
     </div>
   )
