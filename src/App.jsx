@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import Landing from './components/Landing'
 import Auth from './components/Auth'
@@ -27,6 +27,9 @@ export default function App() {
   // notification navigation
   const [navDetail, setNavDetail] = useState(null) // { type:'session', sessionId, expandComments } | { type:'user', userId } | null
   const [prevView, setPrevView]   = useState('home')
+  // live session timer
+  const [activeTimer, setActiveTimer]     = useState(null)   // { startTime } | null
+  const [abandonConfirm, setAbandonConfirm] = useState(null) // null | targetView
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -131,10 +134,22 @@ export default function App() {
         </>
       )}
 
-      <main className="max-w-2xl mx-auto px-4 pt-6 pb-36">
+      {/* Active session banner — shown when timer is running and user is on another tab */}
+      {activeTimer && view !== 'log' && (
+        <TimerBanner startTime={activeTimer.startTime} onClick={() => setView('log')} />
+      )}
+
+      <main className={`max-w-2xl mx-auto px-4 pb-36 ${activeTimer && view !== 'log' ? 'pt-14' : 'pt-6'}`}>
         {view === 'home'          && <Feed            userId={session.user.id} />}
         {view === 'discover'      && <Discover        userId={session.user.id} />}
-        {view === 'log'           && <LogSessionFlow  userId={session.user.id} />}
+        {view === 'log'           && (
+          <LogSessionFlow
+            userId={session.user.id}
+            activeTimer={activeTimer}
+            onTimerStart={t => setActiveTimer(t)}
+            onTimerStop={() => setActiveTimer(null)}
+          />
+        )}
         {view === 'groups'        && <Groups          userId={session.user.id} profile={profile} />}
         {view === 'profile'       && <Profile         userId={session.user.id} profile={profile} onViewSessions={() => { setPrevView('profile'); setView('mySessions') }} />}
         {view === 'mySessions'    && <MySessions      userId={session.user.id} onBack={() => setView('profile')} />}
@@ -155,7 +170,20 @@ export default function App() {
         )}
       </main>
 
-      <BottomNav view={view} setView={v => { setView(v); setActivityOpen(false); setSettingsOpen(false); setNavDetail(null) }} />
+      <BottomNav
+        view={view}
+        setView={v => {
+          // Intercept navigation away from log while timer is running
+          if (activeTimer && view === 'log' && v !== 'log') {
+            setAbandonConfirm(v)
+            return
+          }
+          setView(v)
+          setActivityOpen(false)
+          setSettingsOpen(false)
+          setNavDetail(null)
+        }}
+      />
 
       {settingsOpen && (
         <Settings
@@ -165,6 +193,75 @@ export default function App() {
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      {/* Abandon session confirmation */}
+      {abandonConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center p-4">
+          <div className="fixed inset-0 bg-black/60" onClick={() => setAbandonConfirm(null)} />
+          <div className="relative z-10 w-full max-w-sm bg-[#16161F] border border-white/[0.08] rounded-3xl p-6 space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Abandon session?</h3>
+              <p className="text-slate-400 text-sm mt-1 leading-relaxed">
+                Your timer is still running. This will discard your session.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setAbandonConfirm(null)}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-300 text-sm font-medium hover:border-white/20 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTimer(null)
+                  setView(abandonConfirm)
+                  setAbandonConfirm(null)
+                  setActivityOpen(false)
+                  setSettingsOpen(false)
+                  setNavDetail(null)
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-semibold hover:bg-red-500/20 transition"
+              >
+                Abandon
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+// ── Timer banner component ─────────────────────────────────────────────────────
+
+function TimerBanner({ startTime, onClick }) {
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => tick(n => n + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const secs = Math.max(0, Math.floor((Date.now() - startTime) / 1000))
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  const display = `${m}:${String(s).padStart(2, '0')}`
+
+  return (
+    <button
+      onClick={onClick}
+      className="sticky top-12 z-10 w-full bg-amber-500/10 border-b border-amber-500/20 hover:bg-amber-500/15 transition"
+    >
+      <div className="max-w-2xl mx-auto px-4 h-8 flex items-center gap-2 justify-center">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        <span className="text-amber-400 text-xs font-medium">Session in progress</span>
+        <span className="text-amber-500 text-xs font-mono font-semibold">{display}</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-1 opacity-60">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </div>
+    </button>
   )
 }

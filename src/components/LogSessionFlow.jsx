@@ -28,11 +28,204 @@ function parseSpotifyUrl(url) {
   return match ? `https://open.spotify.com/track/${match[1]}` : null
 }
 
+// ── Elapsed time display (live, 1s interval) ──────────────────────────────────
+
+function ElapsedDisplay({ startTime, large }) {
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => tick(n => n + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const secs = Math.max(0, Math.floor((Date.now() - startTime) / 1000))
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  const s = secs % 60
+  const display = h > 0
+    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${m}:${String(s).padStart(2, '0')}`
+
+  if (large) {
+    return (
+      <div className="text-7xl font-bold text-amber-400 tabular-nums tracking-tight leading-none">
+        {display}
+      </div>
+    )
+  }
+  return <span className="font-mono font-semibold text-amber-500">{display}</span>
+}
+
+// ── Mode selection screen ─────────────────────────────────────────────────────
+
+function ModeSelect({ onManual, onTimer }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-white">Ready to practice?</h2>
+        <p className="text-slate-500 text-sm mt-1">How do you want to log today's session?</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {/* Manual */}
+        <button
+          onClick={onManual}
+          className="flex flex-col items-start gap-3 p-5 rounded-2xl border border-white/[0.08] bg-[#16161F] hover:border-white/20 text-left transition active:scale-[0.97]"
+        >
+          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-white mb-0.5">Log Session</div>
+            <div className="text-xs text-slate-500 leading-snug">Enter duration manually after you're done</div>
+          </div>
+        </button>
+
+        {/* Timer */}
+        <button
+          onClick={onTimer}
+          className="flex flex-col items-start gap-3 p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50 hover:bg-amber-500/10 text-left transition active:scale-[0.97]"
+        >
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-white mb-0.5">Start Timer</div>
+            <div className="text-xs text-slate-500 leading-snug">Timer runs live while you practice</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Abandon confirmation modal ────────────────────────────────────────────────
+
+function AbandonModal({ onCancel, onConfirm }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4">
+      <div className="fixed inset-0 bg-black/60" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-sm bg-[#16161F] border border-white/[0.08] rounded-3xl p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white">Abandon session?</h3>
+          <p className="text-slate-400 text-sm mt-1 leading-relaxed">
+            Your timer will stop and the session won't be saved.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-300 text-sm font-medium hover:border-white/20 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-semibold hover:bg-red-500/20 transition"
+          >
+            Abandon
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Timer screen ──────────────────────────────────────────────────────────────
+
+function TimerScreen({ startTime, instrument, customInstrument, setCustomInstrument, onInstrument, notes, setNotes, onFinish, onAbandonRequest }) {
+  const resolvedInstrument = instrument === 'Other' ? customInstrument.trim() : instrument
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Timer display */}
+      <div className="text-center py-6">
+        <ElapsedDisplay startTime={startTime} large />
+        <div className="text-slate-600 text-[11px] mt-3 uppercase tracking-widest font-medium">
+          session in progress
+        </div>
+      </div>
+
+      {/* Instrument */}
+      <div className="space-y-2.5">
+        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+          What are you playing?
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {INSTRUMENTS.map(inst => (
+            <button
+              key={inst}
+              onClick={() => onInstrument(inst)}
+              className={`px-3.5 py-2 rounded-xl text-sm font-medium border transition active:scale-95 ${
+                instrument === inst
+                  ? 'bg-amber-500 border-amber-500 text-white'
+                  : 'border-white/10 text-slate-300 hover:border-white/20'
+              }`}
+            >
+              {inst}
+            </button>
+          ))}
+        </div>
+        {instrument === 'Other' && (
+          <input
+            className="input mt-1"
+            placeholder="What instrument?"
+            value={customInstrument}
+            onChange={e => setCustomInstrument(e.target.value)}
+            autoFocus
+          />
+        )}
+      </div>
+
+      {/* Notes */}
+      <div className="space-y-2">
+        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+          What are you working on?
+        </p>
+        <textarea
+          className="input resize-none"
+          rows={4}
+          placeholder="Scales, repertoire, technique…"
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="space-y-2 pb-2">
+        <button
+          onClick={onFinish}
+          disabled={!resolvedInstrument}
+          className="btn-primary w-full py-4 text-base font-semibold disabled:opacity-40"
+        >
+          Finish Session
+        </button>
+        <button
+          onClick={onAbandonRequest}
+          className="w-full text-sm text-slate-600 hover:text-red-400 transition py-2"
+        >
+          Abandon session
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function LogSessionFlow({ userId }) {
+export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTimerStop }) {
   const [step, setStep]               = useState(0)
   const [direction, setDirection]     = useState('forward')
+
+  // Mode state
+  const [mode, setMode]               = useState(null)         // null | 'manual' | 'timer'
+  const [timerStartTime, setTimerStartTime] = useState(null)
+  const [timerDone, setTimerDone]     = useState(false)
+  const [abandonOpen, setAbandonOpen] = useState(false)
 
   // Form data
   const [instrument, setInstrument]           = useState('')
@@ -51,13 +244,21 @@ export default function LogSessionFlow({ userId }) {
   const [success, setSuccess]     = useState(false)
   const [avgDuration, setAvgDuration] = useState(null)
 
-  const fileInputRef = useRef(null)
-  const notesRef     = useRef(null)
+  const fileInputRef  = useRef(null)
+  const notesRef      = useRef(null)
   const previewUrlRef = useRef(null)
 
   const resolvedInstrument = instrument === 'Other' ? customInstrument.trim() : instrument
 
-  // Load average session duration for the hint
+  // Restore timer if user navigated away and back
+  useEffect(() => {
+    if (activeTimer) {
+      setMode('timer')
+      setTimerStartTime(activeTimer.startTime)
+    }
+  }, []) // intentionally run only on mount
+
+  // Load average session duration hint (for manual mode)
   useEffect(() => {
     supabase.from('sessions').select('duration_minutes').eq('user_id', userId)
       .then(({ data }) => {
@@ -76,12 +277,14 @@ export default function LogSessionFlow({ userId }) {
     }
   }, [step])
 
-  // Clean up object URLs to prevent memory leaks
+  // Clean up object URLs
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
     }
   }, [])
+
+  // ── Navigation helpers ──
 
   function goNext() {
     setDirection('forward')
@@ -103,10 +306,41 @@ export default function LogSessionFlow({ userId }) {
     setTimeout(goNext, 160)
   }
 
+  // ── Timer controls ──
+
+  function startTimer() {
+    const startTime = Date.now()
+    setTimerStartTime(startTime)
+    setMode('timer')
+    onTimerStart?.({ startTime })
+  }
+
+  function handleTimerFinish() {
+    const elapsedMs   = Date.now() - timerStartTime
+    const elapsedMins = Math.max(1, Math.round(elapsedMs / 60000))
+    setDuration(elapsedMins)
+    setTimerDone(true)
+    setStep(2)           // land on Notes/Spotify so Spotify is still accessible
+    setDirection('forward')
+    onTimerStop?.()      // clear App.jsx banner immediately
+  }
+
+  function handleAbandon() {
+    onTimerStop?.()
+    setMode(null)
+    setTimerStartTime(null)
+    setTimerDone(false)
+    setAbandonOpen(false)
+    setInstrument('')
+    setCustomInstrument('')
+    setNotes('')
+  }
+
+  // ── Photo ──
+
   async function handlePhotoSelect(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    // Revoke previous preview URL
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
     try {
       const compressed = await imageCompression(file, {
@@ -126,14 +360,19 @@ export default function LogSessionFlow({ userId }) {
     }
   }
 
+  // ── Reset ──
+
   function resetForm() {
     setStep(0); setDirection('forward')
+    setMode(null); setTimerStartTime(null); setTimerDone(false); setAbandonOpen(false)
     setInstrument(''); setCustomInstrument('')
     setDuration(30); setNotes(''); setSpotifyUrl(''); setShowSpotify(false)
     setMood(''); setPhotoFile(null); setPhotoPreview(null)
     setError(''); setSuccess(false)
     if (previewUrlRef.current) { URL.revokeObjectURL(previewUrlRef.current); previewUrlRef.current = null }
   }
+
+  // ── Submit ──
 
   async function handleSubmit() {
     if (!resolvedInstrument) return setError('Please select an instrument.')
@@ -144,18 +383,16 @@ export default function LogSessionFlow({ userId }) {
     setError('')
     setLoading(true)
 
-    // Upload photo if attached
     let uploadedPhotoUrl = null
     if (photoFile) {
-      const ext = (photoFile.name?.split('.').pop() || 'jpg').toLowerCase()
+      const ext  = (photoFile.name?.split('.').pop() || 'jpg').toLowerCase()
       const path = `${userId}/${Date.now()}.${ext}`
       const { error: uploadErr } = await supabase.storage
         .from('session-photos')
         .upload(path, photoFile, { contentType: photoFile.type })
       if (!uploadErr) {
         const { data: { publicUrl } } = supabase.storage
-          .from('session-photos')
-          .getPublicUrl(path)
+          .from('session-photos').getPublicUrl(path)
         uploadedPhotoUrl = publicUrl
       }
     }
@@ -175,7 +412,8 @@ export default function LogSessionFlow({ userId }) {
     setSuccess(true)
   }
 
-  // ── Success screen ──────────────────────────────────────────────────────────
+  // ── Success screen ──
+
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -189,7 +427,48 @@ export default function LogSessionFlow({ userId }) {
     )
   }
 
-  const progressPct = (step / (TOTAL_STEPS - 1)) * 100
+  // ── Mode selection ──
+
+  if (mode === null) {
+    return <ModeSelect onManual={() => setMode('manual')} onTimer={startTimer} />
+  }
+
+  // ── Active timer screen ──
+
+  if (mode === 'timer' && !timerDone) {
+    return (
+      <>
+        <TimerScreen
+          startTime={timerStartTime}
+          instrument={instrument}
+          customInstrument={customInstrument}
+          setCustomInstrument={setCustomInstrument}
+          onInstrument={setInstrument}
+          notes={notes}
+          setNotes={setNotes}
+          onFinish={handleTimerFinish}
+          onAbandonRequest={() => setAbandonOpen(true)}
+        />
+        {abandonOpen && (
+          <AbandonModal
+            onCancel={() => setAbandonOpen(false)}
+            onConfirm={handleAbandon}
+          />
+        )}
+      </>
+    )
+  }
+
+  // ── Step flow (manual mode OR post-timer) ──
+
+  // In timerDone mode: steps 2-5. Progress = (step-2)/3.
+  // In manual mode:    steps 0-5. Progress = step/5.
+  const progressPct = timerDone
+    ? ((step - 2) / 3) * 100
+    : (step / (TOTAL_STEPS - 1)) * 100
+
+  // Back: in timerDone mode, don't allow back past step 2 (notes = first post-timer step)
+  const showBack = timerDone ? step > 2 : step > 0
 
   return (
     <div>
@@ -203,7 +482,7 @@ export default function LogSessionFlow({ userId }) {
 
       {/* Back button */}
       <div className="min-h-[28px] mb-5">
-        {step > 0 && (
+        {showBack && (
           <button
             onClick={goBack}
             className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-sm transition"
@@ -214,9 +493,19 @@ export default function LogSessionFlow({ userId }) {
             Back
           </button>
         )}
+        {/* Timer-done breadcrumb on first post-timer step */}
+        {timerDone && step === 2 && (
+          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            {duration} min timed
+          </div>
+        )}
       </div>
 
-      {/* Animated step container — key triggers remount + animation */}
+      {/* Animated step container */}
       <div key={step} className={direction === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left'}>
         {step === 0 && (
           <StepInstrument
@@ -268,6 +557,7 @@ export default function LogSessionFlow({ userId }) {
             loading={loading}
             error={error}
             onSubmit={handleSubmit}
+            timerDone={timerDone}
           />
         )}
       </div>
@@ -523,7 +813,7 @@ function StepPhoto({ photoPreview, fileInputRef, onSelect, onNext }) {
 
 // ── Step 6: Confirm ───────────────────────────────────────────────────────────
 
-function StepConfirm({ instrument, duration, notes, mood, photoPreview, loading, error, onSubmit }) {
+function StepConfirm({ instrument, duration, notes, mood, photoPreview, loading, error, onSubmit, timerDone }) {
   return (
     <div className="space-y-5">
       <div>
@@ -538,7 +828,15 @@ function StepConfirm({ instrument, duration, notes, mood, photoPreview, loading,
         </div>
         <div className="flex items-center justify-between py-3.5">
           <span className="text-slate-500 text-sm">Duration</span>
-          <span className="text-white font-medium text-sm">{duration} min</span>
+          <span className="text-white font-medium text-sm flex items-center gap-1.5">
+            {duration} min
+            {timerDone && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" title="Timed session">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            )}
+          </span>
         </div>
         {mood && (
           <div className="flex items-center justify-between py-3.5">
