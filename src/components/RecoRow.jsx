@@ -42,54 +42,64 @@ async function fetchRecommendations(userId, followingIds) {
 
 // ── Single recommendation card ────────────────────────────────────────────────
 
-function RecoCard({ profile, userId, onFollowChange }) {
-  const [following, setFollowing] = useState(false)
-  const [pending, setPending]     = useState(false)
+function RecoCard({ profile, userId, onFollowChange, onRemove }) {
+  const [pending,  setPending]  = useState(false)
+  const [followed, setFollowed] = useState(false) // true once follow is confirmed
+  const [removing, setRemoving] = useState(false)
 
   async function handleFollow() {
-    if (pending) return
-    const willFollow = !following
-    setFollowing(willFollow)
+    if (pending || followed) return
     setPending(true)
     try {
-      if (willFollow) {
-        const { error } = await supabase.from('follows')
-          .insert({ follower_id: userId, following_id: profile.id })
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('follows').delete()
-          .eq('follower_id', userId).eq('following_id', profile.id)
-        if (error) throw error
-      }
-      onFollowChange?.(profile.id, willFollow)
+      const { error } = await supabase.from('follows')
+        .insert({ follower_id: userId, following_id: profile.id })
+      if (error) throw error
+      setFollowed(true)
+      onFollowChange?.(profile.id, true)
+      // Start exit animation, then remove from DOM after it completes
+      setRemoving(true)
+      setTimeout(() => onRemove?.(profile.id), 380)
     } catch {
-      setFollowing(!willFollow)
+      // insert failed — nothing to revert since we haven't set followed yet
     } finally {
       setPending(false)
     }
   }
 
   return (
-    <div className="bg-[#1A1A27] border border-white/[0.06] rounded-2xl p-3.5 w-36 shrink-0 flex flex-col items-center gap-2 text-center">
-      <Avatar username={profile.username} avatarUrl={profile.avatarUrl} />
-      <div className="w-full">
-        <p className="text-sm font-semibold text-white leading-tight truncate">{profile.username}</p>
-        {profile.instrument && (
-          <p className="text-xs text-slate-500 mt-0.5 truncate">{profile.instrument}</p>
-        )}
-        <p className="text-xs text-slate-600 mt-0.5">{profile.sessionCount} sessions</p>
+    // Outer wrapper collapses its own width + right-margin so adjacent cards
+    // slide smoothly into the vacated space with no residual gap.
+    <div
+      style={{
+        width:       removing ? 0 : '9rem',   // w-36
+        marginRight: removing ? 0 : '0.75rem', // gap-3 equivalent
+        opacity:     removing ? 0 : 1,
+        overflow:    'hidden',
+        flexShrink:  0,
+        transition:  'width 0.35s ease, margin 0.35s ease, opacity 0.2s ease',
+      }}
+    >
+      <div className="w-36 bg-[#1A1A27] border border-white/[0.06] rounded-2xl p-3.5 flex flex-col items-center gap-2 text-center">
+        <Avatar username={profile.username} avatarUrl={profile.avatarUrl} />
+        <div className="w-full">
+          <p className="text-sm font-semibold text-white leading-tight truncate">{profile.username}</p>
+          {profile.instrument && (
+            <p className="text-xs text-slate-500 mt-0.5 truncate">{profile.instrument}</p>
+          )}
+          <p className="text-xs text-slate-600 mt-0.5">{profile.sessionCount} sessions</p>
+        </div>
+        <button
+          onClick={handleFollow}
+          disabled={pending || followed}
+          className={`w-full text-xs font-semibold px-3 py-1.5 rounded-full border transition disabled:opacity-60 ${
+            followed
+              ? 'border-white/10 text-slate-500'
+              : 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
+          }`}
+        >
+          {followed ? 'Following' : pending ? '…' : 'Follow'}
+        </button>
       </div>
-      <button
-        onClick={handleFollow}
-        disabled={pending}
-        className={`w-full text-xs font-semibold px-3 py-1.5 rounded-full border transition disabled:opacity-50 ${
-          following
-            ? 'border-white/10 text-slate-500'
-            : 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
-        }`}
-      >
-        {following ? 'Following' : 'Follow'}
-      </button>
     </div>
   )
 }
@@ -98,7 +108,7 @@ function RecoCard({ profile, userId, onFollowChange }) {
 
 export default function RecoRow({ userId, followingIds, onFollowChange, title = 'People to follow' }) {
   const [profiles, setProfiles] = useState([])
-  const [ready, setReady]       = useState(false)
+  const [ready,    setReady]    = useState(false)
 
   useEffect(() => {
     fetchRecommendations(userId, followingIds).then(recs => {
@@ -108,13 +118,19 @@ export default function RecoRow({ userId, followingIds, onFollowChange, title = 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // fetch once on mount with the snapshot of followingIds
 
+  function removeProfile(id) {
+    setProfiles(prev => prev.filter(p => p.id !== id))
+  }
+
   if (!ready || profiles.length === 0) return null
 
   return (
     <div className="space-y-2.5 py-1">
       <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.12em]">{title}</p>
+      {/* No gap on the flex container — each card owns its own right margin so
+          collapsing a card's width + margin leaves no residual hole */}
       <div
-        className="flex gap-3 overflow-x-auto pb-1"
+        className="flex overflow-x-auto pb-1"
         style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
       >
         {profiles.map(p => (
@@ -123,6 +139,7 @@ export default function RecoRow({ userId, followingIds, onFollowChange, title = 
             profile={p}
             userId={userId}
             onFollowChange={onFollowChange}
+            onRemove={removeProfile}
           />
         ))}
         {/* Trailing spacer so last card isn't flush with edge */}
