@@ -205,6 +205,47 @@ function spotifyTrackId(url) {
   return match ? match[1] : null
 }
 
+// ── Shoutout line ─────────────────────────────────────────────────────────────
+
+function ShoutoutLine({ sessionId }) {
+  const [shoutouts, setShoutouts] = useState([])
+  const [loaded,    setLoaded]    = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from('session_shoutouts')
+      .select('id, status, tagged:profiles!session_shoutouts_tagged_user_id_fkey(username)')
+      .eq('session_id', sessionId)
+      .in('status', ['pending', 'accepted'])
+      .then(({ data }) => { setShoutouts(data ?? []); setLoaded(true) })
+  }, [sessionId])
+
+  if (!loaded || shoutouts.length === 0) return null
+
+  return (
+    <div className="pr-4 pb-1 flex items-center gap-1.5 flex-wrap">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+      <span className="text-xs text-slate-500">practiced with</span>
+      {shoutouts.map((s, i) => (
+        <span key={s.id} className="flex items-center gap-1">
+          {i > 0 && <span className="text-slate-700 text-xs">&</span>}
+          <span className={`text-xs font-semibold ${s.status === 'accepted' ? 'text-amber-400/80' : 'text-slate-500'}`}>
+            @{s.tagged?.username}
+          </span>
+          {s.status === 'pending' && (
+            <span className="text-[10px] text-slate-700 italic">pending</span>
+          )}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // ── Card ──────────────────────────────────────────────────────────────────────
 
 /**
@@ -327,6 +368,9 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
             </button>
           )}
         </div>
+
+        {/* Co-session shoutout line */}
+        <ShoutoutLine sessionId={session.id} />
 
         {/* Activity meta */}
         <div className="pr-4 pb-3 flex items-center gap-2.5 flex-wrap">

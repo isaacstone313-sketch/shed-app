@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import imageCompression from 'browser-image-compression'
 import { checkBadges } from '../utils/badges'
 import { useBadgeToast } from '../context/BadgeContext'
+import { Avatar } from './SessionCard'
 
 const INSTRUMENTS = [
   'Guitar', 'Bass', 'Piano', 'Drums', 'Violin', 'Cello',
@@ -23,7 +24,7 @@ const MOOD_LABELS = {
   rough:    '😮‍💨 Rough day',
 }
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
 
 function parseSpotifyUrl(url) {
   const match = url.trim().match(/spotify\.com\/track\/([a-zA-Z0-9]+)/)
@@ -238,6 +239,7 @@ export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTi
   const [spotifyUrl, setSpotifyUrl]           = useState('')
   const [showSpotify, setShowSpotify]         = useState(false)
   const [mood, setMood]                       = useState('')
+  const [taggedUsers, setTaggedUsers]         = useState([])   // [{ id, username, avatar_url }]
   const [photoFile, setPhotoFile]             = useState(null)
   const [photoPreview, setPhotoPreview]       = useState(null)
 
@@ -370,7 +372,7 @@ export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTi
     setMode(null); setTimerStartTime(null); setTimerDone(false); setAbandonOpen(false)
     setInstrument(''); setCustomInstrument('')
     setDuration(30); setNotes(''); setSpotifyUrl(''); setShowSpotify(false)
-    setMood(''); setPhotoFile(null); setPhotoPreview(null)
+    setMood(''); setTaggedUsers([]); setPhotoFile(null); setPhotoPreview(null)
     setError(''); setSuccess(false)
     if (previewUrlRef.current) { URL.revokeObjectURL(previewUrlRef.current); previewUrlRef.current = null }
   }
@@ -400,7 +402,7 @@ export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTi
       }
     }
 
-    const { error: insertError } = await supabase.from('sessions').insert({
+    const { data: newSession, error: insertError } = await supabase.from('sessions').insert({
       user_id:          userId,
       instrument:       resolvedInstrument,
       duration_minutes: duration,
@@ -408,7 +410,7 @@ export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTi
       spotify_url:      cleanSpotify ? parseSpotifyUrl(cleanSpotify) : null,
       mood:             mood || null,
       photo_url:        uploadedPhotoUrl,
-    })
+    }).select().single()
 
     setLoading(false)
     if (insertError) { setError(insertError.message); return }
@@ -417,6 +419,35 @@ export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTi
     checkBadges(userId).then(earned => {
       earned.forEach(badge => showBadgeToast(badge))
     })
+    // Insert shoutouts + send push notifications (fire-and-forget)
+    if (taggedUsers.length > 0 && newSession?.id) {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      supabase.from('session_shoutouts').insert(
+        taggedUsers.map(u => ({
+          session_id:        newSession.id,
+          tagged_user_id:    u.id,
+          tagged_by_user_id: userId,
+          status:            'pending',
+          expires_at:        expiresAt,
+        }))
+      ).then(({ error: shoutoutError }) => {
+        if (shoutoutError) return
+        supabase.from('profiles').select('username').eq('id', userId).single()
+          .then(({ data: me }) => {
+            const myUsername = me?.username ?? 'Someone'
+            for (const u of taggedUsers) {
+              supabase.functions.invoke('send-notification', {
+                body: {
+                  userId: u.id,
+                  title:  '🎵 Practice shoutout!',
+                  body:   `@${myUsername} tagged you in a practice session — did you practice together? Open Shed to confirm.`,
+                  url:    '/',
+                },
+              })
+            }
+          })
+      })
+    }
   }
 
   // ── Success screen ──
@@ -468,10 +499,10 @@ export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTi
 
   // ── Step flow (manual mode OR post-timer) ──
 
-  // In timerDone mode: steps 2-5. Progress = (step-2)/3.
-  // In manual mode:    steps 0-5. Progress = step/5.
+  // In timerDone mode: steps 2-6. Progress = (step-2)/4.
+  // In manual mode:    steps 0-6. Progress = step/6.
   const progressPct = timerDone
-    ? ((step - 2) / 3) * 100
+    ? ((step - 2) / 4) * 100
     : (step / (TOTAL_STEPS - 1)) * 100
 
   // Back: in timerDone mode, don't allow back past step 2 (notes = first post-timer step)
@@ -547,6 +578,14 @@ export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTi
           <StepMood mood={mood} onSelect={selectMood} onNext={goNext} />
         )}
         {step === 4 && (
+          <StepTag
+            taggedUsers={taggedUsers}
+            setTaggedUsers={setTaggedUsers}
+            currentUserId={userId}
+            onNext={goNext}
+          />
+        )}
+        {step === 5 && (
           <StepPhoto
             photoPreview={photoPreview}
             fileInputRef={fileInputRef}
@@ -554,12 +593,13 @@ export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTi
             onNext={goNext}
           />
         )}
-        {step === 5 && (
+        {step === 6 && (
           <StepConfirm
             instrument={resolvedInstrument}
             duration={duration}
             notes={notes}
             mood={mood}
+            taggedUsers={taggedUsers}
             photoPreview={photoPreview}
             loading={loading}
             error={error}
@@ -766,6 +806,126 @@ function StepMood({ mood, onSelect, onNext }) {
   )
 }
 
+// ── Step 4: Tag someone? ──────────────────────────────────────────────────────
+
+function StepTag({ taggedUsers, setTaggedUsers, currentUserId, onNext }) {
+  const [query,     setQuery]     = useState('')
+  const [results,   setResults]   = useState([])
+  const [searching, setSearching] = useState(false)
+  const debounceRef = useRef(null)
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current)
+    if (!query.trim()) { setResults([]); return }
+    setSearching(true)
+    const taggedIds = taggedUsers.map(u => u.id)
+    debounceRef.current = setTimeout(async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .ilike('username', `%${query.trim()}%`)
+        .neq('id', currentUserId)
+        .limit(8)
+      setResults((data ?? []).filter(p => !taggedIds.includes(p.id)))
+      setSearching(false)
+    }, 300)
+    return () => clearTimeout(debounceRef.current)
+  }, [query, taggedUsers, currentUserId])
+
+  function addUser(user) {
+    if (taggedUsers.length >= 4) return
+    setTaggedUsers(prev => [...prev, user])
+    setQuery('')
+    setResults([])
+  }
+
+  function removeUser(id) {
+    setTaggedUsers(prev => prev.filter(u => u.id !== id))
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-white">Tag someone?</h2>
+        <p className="text-slate-500 text-sm mt-1">Did you practice with anyone?</p>
+      </div>
+
+      {/* Selected user chips */}
+      {taggedUsers.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {taggedUsers.map(u => (
+            <div
+              key={u.id}
+              className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full pl-1.5 pr-2.5 py-1"
+            >
+              <Avatar username={u.username} avatarUrl={u.avatar_url} size="sm" />
+              <span className="text-xs font-medium text-amber-300">@{u.username}</span>
+              <button
+                onClick={() => removeUser(u.id)}
+                className="text-amber-400/60 hover:text-amber-400 ml-0.5 leading-none"
+                aria-label={`Remove ${u.username}`}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Search input */}
+      {taggedUsers.length < 4 && (
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            className="input pl-9"
+            placeholder="Search by username…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+          />
+        </div>
+      )}
+
+      {/* Search results */}
+      {results.length > 0 && (
+        <div className="space-y-1.5 -mt-1">
+          {results.map(p => (
+            <button
+              key={p.id}
+              onClick={() => addUser(p)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#16161F] border border-white/[0.06] hover:border-white/10 transition text-left"
+            >
+              <Avatar username={p.username} avatarUrl={p.avatar_url} size="sm" />
+              <span className="text-sm font-medium text-white">@{p.username}</span>
+              <svg className="ml-auto text-slate-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {searching && query.trim() && results.length === 0 && (
+        <p className="text-slate-600 text-sm">Searching…</p>
+      )}
+
+      <div className="space-y-2 pt-1">
+        {taggedUsers.length > 0 && (
+          <button className="btn-primary w-full py-3" onClick={onNext}>
+            Continue
+          </button>
+        )}
+        <button className="btn-secondary w-full text-sm" onClick={onNext}>
+          Skip
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Step 5: Photo ─────────────────────────────────────────────────────────────
 
 function StepPhoto({ photoPreview, fileInputRef, onSelect, onNext }) {
@@ -820,7 +980,7 @@ function StepPhoto({ photoPreview, fileInputRef, onSelect, onNext }) {
 
 // ── Step 6: Confirm ───────────────────────────────────────────────────────────
 
-function StepConfirm({ instrument, duration, notes, mood, photoPreview, loading, error, onSubmit, timerDone }) {
+function StepConfirm({ instrument, duration, notes, mood, taggedUsers, photoPreview, loading, error, onSubmit, timerDone }) {
   return (
     <div className="space-y-5">
       <div>
@@ -855,6 +1015,16 @@ function StepConfirm({ instrument, duration, notes, mood, photoPreview, loading,
           <div className="py-3.5">
             <span className="text-slate-500 text-sm block mb-1.5">Notes</span>
             <p className="text-slate-300 text-sm leading-relaxed line-clamp-3">{notes}</p>
+          </div>
+        )}
+        {taggedUsers?.length > 0 && (
+          <div className="flex items-start justify-between py-3.5 gap-3">
+            <span className="text-slate-500 text-sm shrink-0">With</span>
+            <div className="flex flex-wrap gap-x-2 gap-y-1 justify-end">
+              {taggedUsers.map(u => (
+                <span key={u.id} className="text-amber-400 text-sm font-medium">@{u.username}</span>
+              ))}
+            </div>
           </div>
         )}
         {photoPreview && (

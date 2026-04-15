@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Avatar } from './SessionCard'
+import { Avatar, formatDuration } from './SessionCard'
+import { checkBadges } from '../utils/badges'
+import { useBadgeToast } from '../context/BadgeContext'
 
 function timeAgo(iso) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -40,8 +42,11 @@ function navTarget(n) {
 }
 
 export default function Activity({ userId, onRead, onNavigate }) {
+  const showBadgeToast = useBadgeToast()
   const [notifications, setNotifications] = useState([])
-  const [loading, setLoading]             = useState(true)
+  const [shoutouts,     setShoutouts]     = useState([])
+  const [loading,       setLoading]       = useState(true)
+  const [shoutoutsLoading, setShoutoutsLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
@@ -68,7 +73,55 @@ export default function Activity({ userId, onRead, onNavigate }) {
     load()
   }, [userId])
 
-  if (loading) {
+  useEffect(() => {
+    async function loadShoutouts() {
+      const { data } = await supabase
+        .from('session_shoutouts')
+        .select(`
+          *,
+          sessions(instrument, duration_minutes, notes, mood),
+          tagger:profiles!session_shoutouts_tagged_by_user_id_fkey(username, avatar_url)
+        `)
+        .eq('tagged_user_id', userId)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+      setShoutouts(data ?? [])
+      setShoutoutsLoading(false)
+    }
+    loadShoutouts()
+  }, [userId])
+
+  async function handleAccept(shoutout) {
+    // Optimistic remove from list
+    setShoutouts(prev => prev.filter(s => s.id !== shoutout.id))
+
+    await supabase
+      .from('session_shoutouts')
+      .update({ status: 'accepted' })
+      .eq('id', shoutout.id)
+
+    await supabase.from('sessions').insert({
+      user_id:          userId,
+      instrument:       shoutout.sessions.instrument,
+      duration_minutes: shoutout.sessions.duration_minutes,
+      notes:            shoutout.sessions.notes ?? '',
+      mood:             shoutout.sessions.mood ?? null,
+      shoutout_id:      shoutout.id,
+    })
+
+    checkBadges(userId).then(earned => earned.forEach(b => showBadgeToast(b)))
+  }
+
+  async function handleDecline(shoutoutId) {
+    setShoutouts(prev => prev.filter(s => s.id !== shoutoutId))
+    await supabase
+      .from('session_shoutouts')
+      .update({ status: 'declined' })
+      .eq('id', shoutoutId)
+  }
+
+  if (loading || shoutoutsLoading) {
     return (
       <div className="space-y-3">
         {[1, 2, 3].map(i => (
@@ -86,7 +139,7 @@ export default function Activity({ userId, onRead, onNavigate }) {
     )
   }
 
-  if (notifications.length === 0) {
+  if (notifications.length === 0 && shoutouts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
@@ -110,6 +163,68 @@ export default function Activity({ userId, onRead, onNavigate }) {
         <p className="text-slate-500 text-sm mt-0.5">Your recent interactions</p>
       </div>
 
+      {/* ── Co-session invites ── */}
+      {shoutouts.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.12em]">
+            Co-session invites
+          </p>
+          {shoutouts.map(s => (
+            <div
+              key={s.id}
+              className="bg-[#16161F] border border-amber-500/20 rounded-2xl overflow-hidden"
+            >
+              {/* Amber accent bar */}
+              <div className="h-0.5 bg-amber-500/40 w-full" />
+              <div className="px-4 py-3.5 space-y-3">
+                {/* Who tagged you */}
+                <div className="flex items-center gap-2.5">
+                  <Avatar username={s.tagger?.username} avatarUrl={s.tagger?.avatar_url} size="sm" />
+                  <p className="text-sm text-slate-300 leading-snug">
+                    <span className="font-bold" style={{ color: '#F59E0B' }}>@{s.tagger?.username}</span>
+                    {' '}tagged you in a practice session
+                  </p>
+                </div>
+                {/* Session details */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="bg-white/5 text-slate-400 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                    {s.sessions?.instrument}
+                  </span>
+                  <span className="text-slate-700 text-xs">·</span>
+                  <span className="text-xs text-slate-500 font-medium">
+                    {formatDuration(s.sessions?.duration_minutes ?? 0)}
+                  </span>
+                  {s.sessions?.notes && (
+                    <>
+                      <span className="text-slate-700 text-xs">·</span>
+                      <span className="text-xs text-slate-600 line-clamp-1 max-w-[180px]">
+                        {s.sessions.notes}
+                      </span>
+                    </>
+                  )}
+                </div>
+                {/* Accept / Decline */}
+                <div className="flex gap-2 pt-0.5">
+                  <button
+                    onClick={() => handleAccept(s)}
+                    className="flex-1 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold hover:bg-amber-500/20 transition"
+                  >
+                    Yes, I was there
+                  </button>
+                  <button
+                    onClick={() => handleDecline(s.id)}
+                    className="flex-1 py-2 rounded-xl border border-white/10 text-slate-500 text-xs font-medium hover:border-white/20 hover:text-slate-400 transition"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Notifications ── */}
       <div className="space-y-2">
         {notifications.map(n => {
           const username   = n.actor?.username ?? 'someone'
