@@ -13,16 +13,21 @@ export default function Discover({ userId }) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [followingIds, setFollowingIds] = useState(new Set())
 
+  const [followsReady, setFollowsReady] = useState(false)
+
   // Search
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
   const debounceRef = useRef(null)
 
-  // Load follows once
+  // Load follows once — gate RecoRow until this resolves so suggestions are filtered correctly
   useEffect(() => {
     supabase.from('follows').select('following_id').eq('follower_id', userId)
-      .then(({ data }) => setFollowingIds(new Set((data ?? []).map(f => f.following_id))))
+      .then(({ data }) => {
+        setFollowingIds(new Set((data ?? []).map(f => f.following_id)))
+        setFollowsReady(true)
+      })
   }, [userId])
 
   const loadSessions = useCallback(async (fromOffset, replace) => {
@@ -95,8 +100,8 @@ export default function Discover({ userId }) {
         <p className="text-slate-500 text-sm mt-0.5">The global practice stream</p>
       </div>
 
-      {/* Suggested for you — hidden while searching */}
-      {!isSearching && (
+      {/* Suggested for you — hidden while searching, gated until follows are loaded */}
+      {!isSearching && followsReady && (
         <RecoRow
           userId={userId}
           followingIds={followingIds}

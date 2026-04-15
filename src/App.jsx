@@ -150,7 +150,13 @@ export default function App() {
             onTimerStop={() => setActiveTimer(null)}
           />
         )}
-        {view === 'groups'        && <Groups          userId={session.user.id} profile={profile} />}
+        {view === 'groups'        && (
+          <Groups
+            userId={session.user.id}
+            profile={profile}
+            onViewUser={id => { setPrevView('groups'); setNavDetail({ type: 'user', userId: id }); setView('userProfile') }}
+          />
+        )}
         {view === 'profile'       && <Profile         userId={session.user.id} profile={profile} onViewSessions={() => { setPrevView('profile'); setView('mySessions') }} />}
         {view === 'mySessions'    && <MySessions      userId={session.user.id} onBack={() => setView('profile')} />}
         {view === 'sessionDetail' && navDetail?.type === 'session' && (

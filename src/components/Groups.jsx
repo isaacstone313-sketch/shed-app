@@ -1,12 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import Leaderboard from './Leaderboard'
+import { Avatar } from './SessionCard'
 
 function generateInviteCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase()
 }
 
-export default function Groups({ userId, profile }) {
+export default function Groups({ userId, profile, onViewUser }) {
+  const [following, setFollowing] = useState([])  // { id, username, avatar_url }
+  const [followsLoading, setFollowsLoading] = useState(true)
+
   const [myGroups, setMyGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedGroup, setSelectedGroup] = useState(null)
@@ -21,6 +25,17 @@ export default function Groups({ userId, profile }) {
   const [joinLoading, setJoinLoading] = useState(false)
   const [joinError, setJoinError] = useState('')
   const [joinSuccess, setJoinSuccess] = useState('')
+
+  useEffect(() => {
+    supabase
+      .from('follows')
+      .select('following_id, profiles!follows_following_id_fkey(id, username, avatar_url)')
+      .eq('follower_id', userId)
+      .then(({ data }) => {
+        setFollowing((data ?? []).map(r => r.profiles).filter(Boolean))
+        setFollowsLoading(false)
+      })
+  }, [userId])
 
   const fetchGroups = useCallback(async () => {
     const { data } = await supabase
@@ -135,6 +150,38 @@ export default function Groups({ userId, profile }) {
         <h2 className="text-lg font-semibold text-white">Groups</h2>
         <p className="text-slate-500 text-sm mt-0.5">Compete with friends on practice time</p>
       </div>
+
+      {/* ── Friends ── */}
+      {!followsLoading && (
+        <div className="space-y-2.5">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.12em]">
+            Following{following.length > 0 ? ` · ${following.length}` : ''}
+          </p>
+          {following.length === 0 ? (
+            <p className="text-slate-600 text-sm">Follow musicians to see them here</p>
+          ) : (
+            <div
+              className="flex overflow-x-auto pb-1 gap-4"
+              style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+            >
+              {following.map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => onViewUser?.(f.id)}
+                  className="flex flex-col items-center gap-1.5 shrink-0 group"
+                >
+                  <div className="ring-2 ring-transparent group-hover:ring-amber-500/40 rounded-full transition">
+                    <Avatar username={f.username} avatarUrl={f.avatar_url} size="md" />
+                  </div>
+                  <span className="text-[11px] text-slate-400 max-w-[56px] truncate leading-tight">
+                    {f.username}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* My groups */}
       {loading ? (
