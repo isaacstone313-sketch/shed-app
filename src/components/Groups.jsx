@@ -2,12 +2,15 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import Leaderboard from './Leaderboard'
 import { Avatar } from './SessionCard'
+import { checkBadges } from '../utils/badges'
+import { useBadgeToast } from '../context/BadgeContext'
 
 function generateInviteCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase()
 }
 
 export default function Groups({ userId, profile, onViewUser }) {
+  const showBadgeToast = useBadgeToast()
   const [following, setFollowing] = useState([])  // { id, username, avatar_url }
   const [followsLoading, setFollowsLoading] = useState(true)
 
@@ -119,6 +122,7 @@ export default function Groups({ userId, profile, onViewUser }) {
       setJoinCode('')
       setJoinSuccess(`Joined "${group.name}"!`)
       await fetchGroups()
+      checkBadges(userId).then(earned => earned.forEach(b => showBadgeToast(b)))
     }
     setJoinLoading(false)
   }

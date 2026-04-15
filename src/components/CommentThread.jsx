@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { Avatar } from './SessionCard'
+import { checkBadges } from '../utils/badges'
+import { useBadgeToast } from '../context/BadgeContext'
 
 function HighlightedBody({ body }) {
   const parts = body.split(/(@\w+)/)
@@ -16,6 +18,7 @@ function HighlightedBody({ body }) {
 }
 
 export default function CommentThread({ sessionId, userId }) {
+  const showBadgeToast = useBadgeToast()
   const [comments, setComments] = useState([])
   const [loading, setLoading]   = useState(true)
   const [body, setBody]         = useState('')
@@ -55,6 +58,7 @@ export default function CommentThread({ sessionId, userId }) {
       setPosted(true)
       setTimeout(() => setPosted(false), 2200)
       await loadComments()
+      checkBadges(userId).then(earned => earned.forEach(b => showBadgeToast(b)))
     }
     setPosting(false)
   }

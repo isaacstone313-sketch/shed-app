@@ -15,6 +15,7 @@ import Settings from './components/Settings'
 import SessionDetail from './components/SessionDetail'
 import UserProfile from './components/UserProfile'
 import MySessions from './components/MySessions'
+import { BadgeProvider } from './context/BadgeContext'
 
 export default function App() {
   const [session, setSession]         = useState(undefined)  // undefined = loading
@@ -102,6 +103,7 @@ export default function App() {
 
   // Full app
   return (
+    <BadgeProvider>
     <div className="min-h-screen bg-[#0D0D14]">
       <Nav
         unreadCount={unreadCount}
@@ -201,6 +203,7 @@ export default function App() {
       )}
 
       {/* Abandon session confirmation */}
+
       {abandonConfirm && (
         <div className="fixed inset-0 z-[60] flex items-end justify-center p-4">
           <div className="fixed inset-0 bg-black/60" onClick={() => setAbandonConfirm(null)} />
@@ -236,6 +239,7 @@ export default function App() {
         </div>
       )}
     </div>
+    </BadgeProvider>
   )
 }
 

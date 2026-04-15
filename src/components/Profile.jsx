@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { computeStats, calculateBestStreak } from '../utils/stats'
 import { Avatar } from './SessionCard'
 import GeoBg from './GeoBg'
+import BadgeIcon from './BadgeIcon'
 
 function formatJoined(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -155,8 +156,11 @@ function PracticeCalendar({ userId }) {
 // ── Main Profile component ────────────────────────────────────────────────────
 
 export default function Profile({ userId, profile: profileProp, onViewSessions }) {
-  const [data, setData]     = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData]         = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [allBadges, setAllBadges]     = useState([])
+  const [earnedIds, setEarnedIds]     = useState(new Set())
+  const [badgesLoading, setBadgesLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
@@ -191,6 +195,19 @@ export default function Profile({ userId, profile: profileProp, onViewSessions }
     }
     load()
   }, [userId, profileProp]) // re-load when profileProp changes (e.g. avatar update)
+
+  useEffect(() => {
+    async function loadBadges() {
+      const [{ data: badges }, { data: earned }] = await Promise.all([
+        supabase.from('badges').select('*').order('category').order('threshold'),
+        supabase.from('user_badges').select('badge_id').eq('user_id', userId),
+      ])
+      setAllBadges(badges ?? [])
+      setEarnedIds(new Set((earned ?? []).map(r => r.badge_id)))
+      setBadgesLoading(false)
+    }
+    loadBadges()
+  }, [userId])
 
   if (loading) {
     return (
@@ -283,6 +300,45 @@ export default function Profile({ userId, profile: profileProp, onViewSessions }
           </button>
         </div>
       </div>
+
+      {/* ── Badges ── */}
+      {!badgesLoading && allBadges.length > 0 && (
+        <div>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2.5">
+            Badges{' '}
+            <span className="text-slate-600 normal-case font-medium tracking-normal">
+              · {earnedIds.size}/{allBadges.length}
+            </span>
+          </p>
+          <div className="card">
+            {['time', 'streak', 'social', 'sessions'].map(cat => {
+              const catBadges = allBadges.filter(b => b.category === cat)
+              if (!catBadges.length) return null
+              const LABEL = { time: 'Time', streak: 'Streak', social: 'Social', sessions: 'Sessions' }
+              return (
+                <div key={cat} className="mb-5 last:mb-0">
+                  <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-3">
+                    {LABEL[cat]}
+                  </p>
+                  <div className="grid grid-cols-4 gap-y-3">
+                    {catBadges.map(badge => {
+                      const earned = earnedIds.has(badge.id)
+                      return (
+                        <div key={badge.id} className="flex flex-col items-center gap-1.5">
+                          <BadgeIcon badge={badge} earned={earned} size={52} />
+                          <p className={`text-[10px] text-center leading-tight px-0.5 ${earned ? 'text-slate-300' : 'text-slate-600'}`}>
+                            {badge.name}
+                          </p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
     </div>
   )

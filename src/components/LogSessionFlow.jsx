@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import imageCompression from 'browser-image-compression'
+import { checkBadges } from '../utils/badges'
+import { useBadgeToast } from '../context/BadgeContext'
 
 const INSTRUMENTS = [
   'Guitar', 'Bass', 'Piano', 'Drums', 'Violin', 'Cello',
@@ -218,6 +220,7 @@ function TimerScreen({ startTime, instrument, customInstrument, setCustomInstrum
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTimerStop }) {
+  const showBadgeToast = useBadgeToast()
   const [step, setStep]               = useState(0)
   const [direction, setDirection]     = useState('forward')
 
@@ -410,6 +413,10 @@ export default function LogSessionFlow({ userId, activeTimer, onTimerStart, onTi
     setLoading(false)
     if (insertError) { setError(insertError.message); return }
     setSuccess(true)
+    // Check for newly earned badges (fire-and-forget, non-blocking)
+    checkBadges(userId).then(earned => {
+      earned.forEach(badge => showBadgeToast(badge))
+    })
   }
 
   // ── Success screen ──

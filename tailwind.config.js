@@ -26,6 +26,13 @@ export default {
           '0%':   { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(0)' },
         },
+        badgeToast: {
+          '0%':   { opacity: '0', transform: 'translateY(60px)' },
+          '12%':  { opacity: '1', transform: 'translateY(-7px)' },
+          '18%':  { opacity: '1', transform: 'translateY(0)' },
+          '78%':  { opacity: '1', transform: 'translateY(0)' },
+          '100%': { opacity: '0', transform: 'translateY(8px)' },
+        },
       },
       animation: {
         'fade-in-out':    'fadeInOut 2.2s ease forwards',
@@ -33,6 +40,7 @@ export default {
         'slide-in-left':  'slideInLeft 220ms ease-out',
         'slide-down':     'slideDown 200ms ease-out',
         'slide-in-panel': 'slideInPanel 280ms ease-out',
+        'badge-toast':    'badgeToast 4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
       },
     },
   },
