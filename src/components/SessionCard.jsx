@@ -1,6 +1,91 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import CommentThread from './CommentThread'
+
+// ── Reactions ─────────────────────────────────────────────────────────────────
+
+const REACTION_EMOJIS = ['🔥', '💪', '🎵', '⭐', '🐴']
+
+function ReactionBar({ sessionId, userId }) {
+  const [reactions, setReactions] = useState([])
+  const [loaded,    setLoaded]    = useState(false)
+  const [pending,   setPending]   = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from('reactions')
+      .select('id, emoji, user_id')
+      .eq('session_id', sessionId)
+      .then(({ data }) => { setReactions(data ?? []); setLoaded(true) })
+  }, [sessionId])
+
+  if (!loaded) return null
+
+  const myReaction = reactions.find(r => r.user_id === userId) ?? null
+  const counts = reactions.reduce((acc, r) => { acc[r.emoji] = (acc[r.emoji] ?? 0) + 1; return acc }, {})
+
+  async function handleReact(emoji) {
+    if (pending) return
+    setPending(true)
+
+    if (myReaction?.emoji === emoji) {
+      // Tap same emoji → remove reaction
+      const prev = reactions
+      setReactions(r => r.filter(x => x.user_id !== userId))
+      const { error } = await supabase.from('reactions').delete()
+        .eq('session_id', sessionId).eq('user_id', userId)
+      if (error) setReactions(prev)
+
+    } else if (myReaction) {
+      // Tap different emoji → switch
+      const prev = reactions
+      setReactions(r => r.map(x => x.user_id === userId ? { ...x, emoji } : x))
+      const { error } = await supabase.from('reactions').update({ emoji })
+        .eq('session_id', sessionId).eq('user_id', userId)
+      if (error) setReactions(prev)
+
+    } else {
+      // No existing reaction → insert
+      const optimistic = { id: 'opt', emoji, user_id: userId }
+      setReactions(r => [...r, optimistic])
+      const { data, error } = await supabase.from('reactions')
+        .insert({ session_id: sessionId, user_id: userId, emoji })
+        .select().single()
+      if (error) setReactions(r => r.filter(x => x.id !== 'opt'))
+      else       setReactions(r => r.map(x => x.id === 'opt' ? data : x))
+    }
+
+    setPending(false)
+  }
+
+  return (
+    <div className="border-t border-white/5 pr-4 pl-1 py-1.5 flex items-center gap-0.5">
+      {REACTION_EMOJIS.map(emoji => {
+        const count    = counts[emoji] ?? 0
+        const isActive = myReaction?.emoji === emoji
+        return (
+          <button
+            key={emoji}
+            onClick={() => handleReact(emoji)}
+            disabled={pending}
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm transition disabled:opacity-60 ${
+              isActive
+                ? 'bg-amber-500/10 border border-amber-500/30'
+                : 'border border-transparent text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
+            }`}
+          >
+            <span className="leading-none">{emoji}</span>
+            {count > 0 && (
+              <span className={`text-xs font-semibold leading-none ${isActive ? 'text-amber-400' : 'text-slate-500'}`}>
+                {count}
+              </span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -359,6 +444,9 @@ export default function SessionCard({ session, userId, isFollowing, onFollowChan
             {commentCount > 0 && <span className="text-xs font-semibold">{commentCount}</span>}
           </button>
         </div>
+
+        {/* Reactions */}
+        <ReactionBar sessionId={session.id} userId={userId} />
 
         {commentsOpen && (
           <CommentThread
